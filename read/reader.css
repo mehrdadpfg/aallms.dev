@@ -24,6 +24,9 @@
 .rd-chaplink:hover .rd-chaplink-t { color: var(--fg1); }
 .rd-chaplink.is-current { background: var(--surface-sunken); }
 .rd-chaplink.is-current .rd-chaplink-t { color: var(--fg1); font-weight: 600; }
+/* About / Sources link in the top bar */
+.rd-toplink { flex: none; font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--fg2); text-decoration: none; padding: 6px 11px; border-radius: var(--r-sm); transition: color var(--dur-1) var(--ease-standard), background var(--dur-1) var(--ease-standard); }
+.rd-toplink:hover, .rd-toplink.is-current { color: var(--accent); background: var(--surface-sunken); }
 /* progress hairline, pinned to the very top of the viewport (out of the navbar) */
 .rd-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 50; pointer-events: none; }
 .rd-progress-fill { height: 100%; background: var(--accent); box-shadow: 0 0 9px color-mix(in srgb, var(--accent) 55%, transparent); transition: width var(--dur-3) var(--ease-in-out); }

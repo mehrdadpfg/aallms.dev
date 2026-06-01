@@ -40,15 +40,19 @@
 
   .mech-seg.dg-seg button { font-family: var(--font-mono); }
 
-  /* a tiny signed vector strip */
+  /* a tiny signed vector strip — bars animate height/colour into place on flip */
   .mech-vec { display: inline-flex; align-items: stretch; gap: 2px; height: 26px; flex: 0 0 auto; }
   .mech-vec-cell { width: 7px; height: 100%; display: flex; align-items: center; background: color-mix(in srgb, var(--border) 50%, transparent); border-radius: 2px; }
-  .mech-vec-bar { width: 100%; border-radius: 2px; }
+  .mech-vec-bar { width: 100%; border-radius: 2px; transition: height var(--dur-3, .42s) var(--ease-spring), align-self var(--dur-2, .24s) var(--ease-standard), background var(--dur-2, .24s) var(--ease-standard); }
 
-  /* the sentence strip (meaning-givers lit by attention weight) */
+  /* the sentence strip (stage 1) — each token fades+slides in, staggered 30ms */
   .mech-sent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: var(--sp-4, 18px); }
-  .mech-sent-tok { font-family: var(--font-mono); font-size: 15px; padding: 6px 12px; border-radius: var(--r-sm, 7px); transition: background var(--dur-1, .18s) var(--ease-standard, ease), color var(--dur-1, .18s) var(--ease-standard, ease); }
+  .mech-sent-tok { font-family: var(--font-mono); font-size: 15px; padding: 6px 12px; border-radius: var(--r-sm, 7px); transition: background var(--dur-2, .24s) var(--ease-standard), color var(--dur-2, .24s) var(--ease-standard); animation: mech-tok-in var(--dur-3, .42s) var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 34ms); }
   .mech-sent-tok.is-q { font-weight: 600; }
+  /* the high-weight words briefly pulse to mark who won the attention */
+  .mech-sent-tok.is-lit { animation: mech-tok-in var(--dur-3, .42s) var(--ease-spring) both, mech-word-pulse var(--dur-3, .42s) var(--ease-standard) both; animation-delay: calc(var(--i, 0) * 34ms), calc(180ms + var(--i, 0) * 34ms); }
+  @keyframes mech-tok-in { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: none; } }
+  @keyframes mech-word-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, #fff 0%, transparent); } 45% { box-shadow: 0 0 0 4px color-mix(in srgb, #fff 55%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 
   /* the chosen query header */
   .mech-q { display: flex; align-items: center; gap: var(--sp-3, 12px); flex-wrap: wrap; margin-bottom: var(--sp-4, 18px); padding-bottom: var(--sp-4, 18px); border-bottom: 1px solid var(--border); }
@@ -63,9 +67,13 @@
   .mech-trow.is-self { background: var(--concept-query-tint); }
   .mech-tok { font-family: var(--font-mono); font-size: 13px; color: var(--fg1); }
   .mech-num { font-family: var(--font-mono); font-size: 12.5px; color: var(--fg2); text-align: right; font-variant-numeric: tabular-nums; }
+  /* numbers cross-fade as their value changes on flip (stage 2) */
+  .mech-num--fade { animation: mech-num-fade var(--dur-2, .24s) var(--ease-standard) both; animation-delay: 90ms; }
+  @keyframes mech-num-fade { 0% { opacity: 0; } 100% { opacity: 1; } }
   .mech-wcell { min-width: 0; }
   .mech-wbar-wrap { position: relative; height: 20px; background: var(--surface-sunken); border-radius: var(--r-xs, 4px); overflow: hidden; display: flex; align-items: center; }
-  .mech-wbar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-xs, 4px); transition: width var(--dur-2, .3s) var(--ease-standard, ease), background var(--dur-1, .18s) var(--ease-standard, ease); }
+  /* the weight bar visibly grows/shrinks into place — spring, slight lead-in delay */
+  .mech-wbar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-xs, 4px); transition: width var(--dur-3, .42s) var(--ease-spring) 90ms, background var(--dur-2, .24s) var(--ease-standard) 90ms; }
   .mech-wval { position: relative; font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; padding-left: 7px; font-variant-numeric: tabular-nums; }
 
   /* the pipeline strip */
@@ -75,16 +83,46 @@
   .mech-flow-step span { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg3); }
   .mech-flow-out b { color: var(--concept-output); }
 
-  /* the output vector + resolved-meaning readout */
-  .mech-out { display: flex; align-items: center; gap: var(--sp-3, 12px); flex-wrap: wrap; }
+  /* the output vector — bars transition in place; a soft glow sweeps the row
+     AFTER the weights settle (stage 3) */
+  .mech-out { position: relative; display: flex; align-items: center; gap: var(--sp-3, 12px); flex-wrap: wrap; border-radius: var(--r-sm, 7px); padding: 4px; margin: 2px -4px; }
+  .mech-out-glow { position: absolute; inset: 0; border-radius: var(--r-sm, 7px); pointer-events: none; z-index: 0; animation: mech-out-glow var(--dur-4, .8s) var(--ease-standard) both; animation-delay: 300ms; }
+  .mech-out > :not(.mech-out-glow) { position: relative; z-index: 1; }
   .mech-out-lab { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
-  .mech-resolved { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-sm, 7px); border: 1px solid; transition: background var(--dur-2, .3s) var(--ease-standard, ease), border-color var(--dur-2, .3s) var(--ease-standard, ease); margin-left: auto; }
-  .mech-resolved-arrow { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .03em; text-transform: uppercase; color: var(--fg3); }
-  .mech-resolved-tag { font-family: var(--font-body); font-size: 15px; font-weight: 600; }
+  .mech-out-note { font-size: 13px; color: var(--fg2); flex: 1 1 200px; min-width: 180px; line-height: 1.45; }
+  @keyframes mech-out-glow { 0% { background: color-mix(in srgb, var(--concept-output) 0%, transparent); } 40% { background: color-mix(in srgb, var(--concept-output) 14%, transparent); } 100% { background: transparent; } }
+
+  /* THE DECISION — softmax over the two candidate meanings (visual climax) */
+  .mech-decide { margin-top: var(--sp-4, 18px); padding: var(--sp-4, 18px); border-radius: var(--r-md, 10px); background: var(--surface-sunken); border: 1px solid var(--border); }
+  .mech-decide-head { display: flex; align-items: center; gap: 8px; margin-bottom: var(--sp-3, 12px); font-family: var(--font-mono); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; color: var(--fg2); }
+  .mech-decide-rows { display: flex; flex-direction: column; gap: var(--sp-3, 12px); }
+  .mech-dec-row { display: grid; grid-template-columns: 120px 150px 1fr; align-items: center; gap: var(--sp-3, 12px); padding: 6px 8px; border-radius: var(--r-sm, 7px); transition: background var(--dur-2, .3s) var(--ease-standard, ease); }
+  .mech-dec-row.is-win { background: color-mix(in srgb, var(--accent) 8%, transparent); transition: background var(--dur-3, .42s) var(--ease-standard) 360ms; }
+  .mech-dec-name { font-family: var(--font-body); font-size: 16px; font-weight: 600; }
+  .mech-dec-score { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg3); font-variant-numeric: tabular-nums; }
+  .mech-dec-track { position: relative; height: 28px; border-radius: var(--r-sm, 7px); background: var(--surface); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; }
+  /* decision bars move LAST (stage 4): wait for the output to settle, then swing */
+  .mech-dec-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-sm, 7px); transition: width var(--dur-3, .42s) var(--ease-spring) 380ms, background var(--dur-2, .24s) var(--ease-standard) 380ms; }
+  .mech-dec-pct { position: relative; font-family: var(--font-mono); font-size: 13px; font-weight: 600; padding-left: 10px; font-variant-numeric: tabular-nums; }
+  /* a one-shot sheen across the winning bar, fired after it has swung into place */
+  .mech-dec-pulse { position: absolute; left: 0; top: 0; bottom: 0; right: 0; border-radius: var(--r-sm, 7px); pointer-events: none; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, #fff 50%, transparent) 50%, transparent 70%); background-size: 220% 100%; animation: mech-dec-sheen 620ms var(--ease-in-out) both; animation-delay: 560ms; }
+  @keyframes mech-dec-sheen { 0% { background-position: 130% 0; opacity: 0; } 25% { opacity: 1; } 100% { background-position: -130% 0; opacity: 0; } }
+  .mech-decide-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3, 12px); flex-wrap: wrap; margin-top: var(--sp-3, 12px); padding-top: var(--sp-3, 12px); border-top: 1px solid var(--border); }
+  .mech-decide-sum { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+  .mech-decide-win { font-family: var(--font-body); font-size: 15px; font-weight: 600; padding: 5px 12px; border-radius: var(--r-sm, 7px); border: 1px solid; transition: color var(--dur-2, .3s) var(--ease-standard, ease), background var(--dur-2, .3s) var(--ease-standard, ease), border-color var(--dur-2, .3s) var(--ease-standard, ease); }
+
+  /* reduced motion: no transitions, no keyframes — state swaps instantly */
+  @media (prefers-reduced-motion: reduce) {
+    .mech-vec-bar, .mech-sent-tok, .mech-wbar, .mech-dec-row.is-win, .mech-dec-fill { transition: none !important; }
+    .mech-sent-tok, .mech-sent-tok.is-lit, .mech-num--fade, .mech-out-glow, .mech-dec-pulse { animation: none !important; }
+    .mech-out-glow, .mech-dec-pulse { display: none; }
+  }
 
   @media (max-width: 620px) {
     .mech-trow { grid-template-columns: 44px 1fr 44px 56px 1.3fr; }
     .mech-trow > .mech-vec:last-child, .mech-thead > span:last-child { display: none; }
+    .mech-dec-row { grid-template-columns: 1fr; gap: 4px; }
+    .mech-dec-track { width: 100%; }
   }
 </style>
 </head>

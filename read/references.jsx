@@ -31,6 +31,7 @@ function ReferencesPage() {
               </a>
             ))}
           </nav>
+          <a className="rd-toplink is-current" href="references.html" aria-current="page">About</a>
           <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === "dark" ? "light" : "dark")} />
         </div>
       </header>

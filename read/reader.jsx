@@ -276,6 +276,7 @@ function StepReader({ chapter, section }) {
               );
             })}
           </nav>
+          <a className="rd-toplink" href="references.html">About</a>
           <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === "dark" ? "light" : "dark")} />
         </div>
       </header>

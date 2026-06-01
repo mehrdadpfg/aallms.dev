@@ -119,7 +119,7 @@ function SiteFooter({ refsHref = "references.html" }) {
       <div className="site-foot-inner">
         <span className="site-foot-brand">aa<span className="brand-llm">llm</span>s<span className="brand-dev">.dev</span></span>
         <nav className="site-foot-links" aria-label="Footer">
-          <a className="site-foot-link" href={refsHref}>Sources</a>
+          <a className="site-foot-link" href={refsHref}>About</a>
           <a className="site-foot-ic" href={SOCIAL.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d={GH_SVG} /></svg>
           </a>

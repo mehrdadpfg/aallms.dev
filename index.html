@@ -16,6 +16,9 @@
   body { font-family: var(--font-body); background: var(--bg); }
   .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
   #root { height: 100%; }
+  .land-tools { display: flex; align-items: center; gap: 8px; }
+  .land-toplink { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--fg2); text-decoration: none; padding: 6px 11px; border-radius: var(--r-sm); transition: color .12s ease, background .12s ease; }
+  .land-toplink:hover { color: var(--accent); background: var(--surface-sunken); }
 </style>
 </head>
 <body>
@@ -77,6 +80,7 @@
           <div className="land-top">
             <Brand />
             <div className="land-tools">
+              <a className="land-toplink" href="read/references.html">About</a>
               <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === "dark" ? "light" : "dark")} />
             </div>
           </div>

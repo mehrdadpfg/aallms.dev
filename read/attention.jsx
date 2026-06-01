@@ -109,6 +109,15 @@ const MECH_SENT = {
   company: { label: "Company", emoji: "🏢", sense: "company", tint: "var(--concept-key)",    words: ["apple", "released", "a", "new", "phone"] },
 };
 
+// The two candidate meanings, each a "sense prototype" direction the output
+// vector is scored against. Fruit points along the food axis (dim0), company
+// along the tech axis (dim1). MECH_DECIDE_TEMP sharpens the 2-way softmax.
+const MECH_SENSES = [
+  { id: "fruit",   emoji: "🍎", label: "fruit",   proto: [1, 0, 0, 0], col: MECH_COL.v },
+  { id: "company", emoji: "🏢", label: "company", proto: [0, 1, 0, 0], col: MECH_COL.k },
+];
+const MECH_DECIDE_TEMP = 0.18;
+
 function mechDot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
 function MiniVec({ vec, col, w }) {
   // a compact bar-strip rendering of a small vector (signed bars from center)
@@ -124,6 +133,11 @@ function MiniVec({ vec, col, w }) {
 }
 function AttnMechanism() {
   const [sk, setSk] = React.useState("fruit");
+  // Toggling sk remounts the keyed sub-trees (sentence strip, output, decision
+  // pulses) so their staged CSS keyframes re-fire as a "chain flip"; the bars
+  // (weights, value/key strips, decision fills) animate from prop changes via
+  // CSS transitions. Reduced-motion is handled entirely in CSS.
+  const pick = (k) => { if (k !== sk) setSk(k); };
   const sent = MECH_SENT[sk];
   const words = sent.words;
   const q = APPLE_Q;
@@ -146,34 +160,49 @@ function AttnMechanism() {
   // output = Σ wᵢ · vᵢ
   const out = Array.from({ length: MECH_D }, (_, d) =>
     rows.reduce((s, r, i) => s + weights[i] * MECH_WORD[r.t].v[d], 0));
-  // which sense won? compare the food axis (dim0) vs tech axis (dim1) of output.
-  const resolvedFruit = out[0] >= out[1];
-  const resolved = resolvedFruit
-    ? { emoji: "🍎", word: "fruit",   col: MECH_COL.v }
-    : { emoji: "🏢", word: "company", col: MECH_COL.k };
+
+  // THE DECISION: score the output against each sense prototype, then softmax
+  // over the two meanings → a distribution that sums to 1.
+  const senseScores = MECH_SENSES.map(s => mechDot(out, s.proto));
+  const dmx = Math.max(...senseScores);
+  const dexps = senseScores.map(sc => Math.exp((sc - dmx) / MECH_DECIDE_TEMP));
+  const ddenom = dexps.reduce((a, b) => a + b, 0) || 1;
+  const senseProb = dexps.map(e => e / ddenom);
+  const winIdx = senseProb[0] >= senseProb[1] ? 0 : 1;
+  const resolved = MECH_SENSES[winIdx];
 
   return (
     <div>
       <div className="dg-seg mech-seg" style={{ marginBottom: "var(--sp-4)" }}>
         {Object.keys(MECH_SENT).map(k => (
-          <button key={k} className={sk === k ? "on" : ""} onClick={() => setSk(k)}>
+          <button key={k} className={sk === k ? "on" : ""}
+            onMouseDown={e => e.preventDefault()} /* stop the focus-scroll jump on click */
+            onClick={() => pick(k)}>
             {MECH_SENT[k].emoji}&nbsp;{MECH_SENT[k].label}
           </button>
         ))}
       </div>
 
-      <div className="fp-plate rd-plate">
-        {/* the sentence, with the meaning-givers lit by their attention weight */}
-        <div className="mech-sent">
-          {words.map((t, i) => (
-            <span key={i}
-              className={"mech-sent-tok" + (t === "apple" ? " is-q" : "")}
-              style={t === "apple"
-                ? { background: MECH_COL.q, color: "var(--on-accent)" }
-                : { background: attnHeat(weights[i] / maxW), color: weights[i] / maxW > 0.45 ? "#2a2118" : "var(--fg2)" }}>
-              {t}
-            </span>
-          ))}
+      <div className="fp-plate rd-plate mech-anim">
+        {/* the sentence, with the meaning-givers lit by their attention weight.
+            Staggered fade+slide per token on flip (stage 1 of the chain). */}
+        <div className="mech-sent" key={sk}>
+          {words.map((t, i) => {
+            const lit = !(t === "apple") && weights[i] / maxW > 0.55;
+            const isWinner = !(t === "apple") && weights[i] / maxW > 0.7;
+            return (
+              <span key={i}
+                className={"mech-sent-tok" + (t === "apple" ? " is-q" : "") + (isWinner ? " is-lit" : "")}
+                style={Object.assign(
+                  { "--i": i },
+                  t === "apple"
+                    ? { background: MECH_COL.q, color: "var(--on-accent)" }
+                    : { background: attnHeat(weights[i] / maxW), color: lit ? "#fff" : "#2a2118" }
+                )}>
+                {t}
+              </span>
+            );
+          })}
         </div>
 
         {/* the fixed query */}
@@ -196,14 +225,14 @@ function AttnMechanism() {
           </div>
           {rows.map((r, i) => (
             <div key={i} className={"mech-trow" + (r.isQuery ? " is-self" : "")} role="row">
-              <span className="mech-tok" style={r.isQuery ? { color: MECH_COL.q, fontWeight: 600 } : undefined}>{r.t}</span>
+              <span className="mech-tok" style={r.isQuery ? { color: MECH_COL.q, fontWeight: 600 } : undefined} key={r.t}>{r.t}</span>
               <MiniVec vec={MECH_WORD[r.t].k} col={MECH_COL.k} />
-              <span className="mech-num">{r.raw.toFixed(2)}</span>
-              <span className="mech-num">{r.scaled.toFixed(2)}</span>
+              <span className="mech-num mech-num--fade" key={"raw" + sk}>{r.raw.toFixed(2)}</span>
+              <span className="mech-num mech-num--fade" key={"sc" + sk}>{r.scaled.toFixed(2)}</span>
               <span className="mech-wcell">
                 <span className="mech-wbar-wrap">
                   <span className="mech-wbar" style={{ width: Math.max(2, (weights[i] / maxW) * 100) + "%", background: attnHeat(weights[i] / maxW) }} />
-                  <span className="mech-wval" style={{ color: weights[i] / maxW > 0.45 ? "#2a2118" : "var(--fg2)" }}>{weights[i].toFixed(2)}</span>
+                  <span className="mech-wval mech-num--fade" key={"w" + sk} style={{ color: weights[i] / maxW > 0.55 ? "#fff" : "#2a2118" }}>{weights[i].toFixed(2)}</span>
                 </span>
               </span>
               <MiniVec vec={MECH_WORD[r.t].v} col={MECH_COL.v} />
@@ -221,18 +250,49 @@ function AttnMechanism() {
           <span className="mech-flow-step mech-flow-out"><b>weighted sum</b><span>Σ wᵢ·vᵢ</span></span>
         </div>
 
-        {/* the output vector + resolved meaning */}
+        {/* the output vector — bars transition in place; a keyed glow overlay
+            re-fires on each flip AFTER the weights settle (stage 3). */}
         <div className="mech-out">
+          <span className="mech-out-glow" key={"glow" + sk} />
           <span className="mech-out-lab" style={{ color: MECH_COL.o }}>output for “apple”</span>
           <MiniVec vec={out} col={MECH_COL.o} w={150} />
-          <span className="mech-resolved" style={{ background: "color-mix(in srgb, " + resolved.col + " 20%, transparent)", borderColor: "color-mix(in srgb, " + resolved.col + " 50%, transparent)" }}>
-            <span className="mech-resolved-arrow">resolved meaning →</span>
-            <span className="mech-resolved-tag" style={{ color: resolved.col }}>{resolved.emoji} {resolved.word}</span>
-          </span>
+          <span className="mech-out-note">this blended vector is what gets <b>matched against each meaning</b> below.</span>
+        </div>
+
+        {/* THE DECISION — the visual climax: softmax over the two meanings.
+            The winning row pulses LAST (stage 4), reinforcing weight→output→meaning. */}
+        <div className="mech-decide">
+          <div className="mech-decide-head">
+            <Icon name="scale" size={15} stroke={2} />
+            <span>sense decision — softmax over the two meanings</span>
+          </div>
+          <div className="mech-decide-rows">
+            {MECH_SENSES.map((s, i) => {
+              const p = senseProb[i], win = i === winIdx;
+              const pctLabel = Math.round(p * 100) + "%";
+              return (
+                <div key={s.id} className={"mech-dec-row" + (win ? " is-win" : "")}>
+                  <span className="mech-dec-name" style={{ color: s.col }}>{s.emoji} {s.label}</span>
+                  <span className="mech-dec-score mech-num--fade" key={"ds" + sk}>output·proto&nbsp;=&nbsp;{senseScores[i].toFixed(2)}</span>
+                  <span className="mech-dec-track">
+                    <span className="mech-dec-fill" style={{ width: Math.max(2, p * 100) + "%", background: s.col }} />
+                    {win ? <span className="mech-dec-pulse" key={"dp" + sk} /> : null}
+                    <span className="mech-dec-pct mech-num--fade" key={"dpct" + sk} style={{ color: p > 0.5 ? "#fff" : "var(--fg2)" }}>{pctLabel}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mech-decide-foot">
+            <span className="mech-decide-sum">two probabilities, summing to {(senseProb[0] + senseProb[1]).toFixed(2)}</span>
+            <span className="mech-decide-win" style={{ color: resolved.col, background: "color-mix(in srgb, " + resolved.col + " 18%, transparent)", borderColor: "color-mix(in srgb, " + resolved.col + " 50%, transparent)" }}>
+              resolved → {resolved.emoji} {resolved.label}
+            </span>
+          </div>
         </div>
       </div>
 
-      <p className="dg-read">Same word, two meanings. The <b style={{ color: "var(--concept-query)" }}>query</b> for “apple” asks on both axes at once. In each sentence it meets every <b style={{ color: "var(--concept-key)" }}>key</b> in a <b>dot product</b> — one similarity number per token — then divides by <b>√d</b> so the scores don't blow up. <b>Softmax</b> turns those into <b>weights that sum to 1</b>: in the fruit sentence “apple” leans on <b>ate</b> and <b>ripe</b>; in the company one it leans on <b>released</b> and <b>phone</b>, while filler words like <i>she</i>, <i>a</i>, <i>new</i> are nearly ignored. The <b>weighted sum of <span style={{ color: "var(--concept-value)" }}>values</span></b> then lands the <b style={{ color: "var(--concept-output)" }}>output</b> in a different place each time — the same token resolves to <span style={{ color: MECH_COL.v }}>🍎 fruit</span> or <span style={{ color: MECH_COL.k }}>🏢 company</span> purely from what it attended to. That is attention's job: <b>reading meaning out of context</b>.</p>
+      <p className="dg-read">Watch the chain when you toggle. The <b style={{ color: "var(--concept-query)" }}>query</b> for “apple” asks on both axes at once; its <b>dot product</b> with every <b style={{ color: "var(--concept-key)" }}>key</b>, scaled by <b>√d</b> and passed through <b>softmax</b>, decides <i>which words it listens to</i> — <b>ate / ripe</b> in the fruit sentence, <b>released / phone</b> in the company one, with filler nearly ignored. That weighted sum lands the <b style={{ color: "var(--concept-output)" }}>output</b> on one side of the space. Then the real decision: the output is <b>scored against the two sense prototypes</b> and a final <b>softmax over the two meanings</b> picks the winner — <span style={{ color: MECH_COL.v }}>🍎 fruit ≈96%</span> here, <span style={{ color: MECH_COL.k }}>🏢 company ≈97%</span> there. Flip the toggle and the whole chain flips with it: different words win the weight → the output crosses over → the sense-softmax swings the other way. That swing <i>is</i> attention reading meaning out of context.</p>
     </div>
   );
 }
@@ -381,28 +441,36 @@ const ATTENTION = {
       eyebrow: "STEP 03 · ATTENTION", title: "Query, Key, Value", navTitle: "Query, Key, Value",
       Body: () => (<>
         <p>How does a token decide what to attend to? Each one produces three vectors. The <b style={{ color: "var(--concept-query)" }}>Query</b> is what it's looking for; the <b style={{ color: "var(--concept-key)" }}>Key</b> is what it advertises; the <b style={{ color: "var(--concept-value)" }}>Value</b> is what it contributes if chosen.</p>
-        <p>Here's what this buys you: <b>meaning, read out of context</b>. Take the word <b>apple</b>. On its own it's ambiguous — fruit or company? — and its raw vector can't tell you which. Attention resolves it. In <i>“she ate a ripe apple,”</i> apple's query matches the keys of <b>ate</b> and <b>ripe</b>; in <i>“apple released a new phone,”</i> it matches <b>released</b> and <b>phone</b>. The same token, attending to different neighbours, lands in two different meanings.</p>
-        <p>Below is exactly how the weights that do this are computed. For the query <code className="code-inline">q</code> (fixed on “apple”), take the <b>dot product</b> with each word's key, <code className="code-inline">q·kᵢ</code> — one similarity number per token, large when the two vectors point the same way. Divide each by <code className="code-inline">√d</code> (the head's dimension) so the scores don't blow up as vectors get longer. Push the scaled scores through <b>softmax</b> — exponentiate and normalise — and they become a set of <b>weights that sum to 1</b>, a clean distribution of focus across the sentence. Finally, take the <b>weighted sum of the values</b>, <code className="code-inline">Σ wᵢ·vᵢ</code> — and that blend is apple's output, now firmly fruit or company. Toggle the two sentences and watch the same word resolve.</p>
+        <p>Here's what this buys you: <b>meaning, read out of context</b>. Take the word <b>apple</b> — on its own it's ambiguous (fruit or company?), and its raw vector can't tell you which. Attention resolves it from the neighbours: in <i>“she ate a ripe apple,”</i> apple's query matches the keys of <b>ate</b> and <b>ripe</b>; in <i>“apple released a new phone,”</i> it matches <b>released</b> and <b>phone</b>. Same token, different neighbours, two different meanings — and next we'll see exactly how that match turns into a number.</p>
       </>),
-      Diagram: AttnQKVMechanism,
-      wide: true,
-      caption: "The query is fixed on the ambiguous word “apple.” Toggle the sentence: q·kᵢ → ÷√d → softmax → weighted sum of V resolves it to 🍎 fruit or 🏢 company.",
+      Diagram: AttnQKV,
+      caption: "One token's vector, projected three ways: Query (what it seeks), Key (what it offers), Value (what it passes on).",
     },
     {
-      eyebrow: "STEP 04 · ATTENTION", title: "Many heads, many views", navTitle: "Many heads",
+      eyebrow: "STEP 04 · ATTENTION", title: "Match, weigh, blend", navTitle: "The mechanism",
+      Body: () => (<>
+        <p>Now the computation itself, for the query <code className="code-inline">q</code> fixed on “apple.” Take the <b>dot product</b> with each word's key, <code className="code-inline">q·kᵢ</code> — one similarity number per token, large when the two vectors point the same way. Divide each by <code className="code-inline">√d</code> (the head's dimension) so the scores don't blow up as vectors get longer. Push the scaled scores through <b>softmax</b> — exponentiate and normalise — and they become a set of <b>weights that sum to 1</b>, a clean distribution of focus. Finally, take the <b>weighted sum of the values</b>, <code className="code-inline">Σ wᵢ·vᵢ</code> — that blend is apple's output, now firmly fruit or company.</p>
+        <p>Read the matrix below row by row — key, score, scaled score, weight, value — then look at the <b>sense decision</b> at the bottom: apple's output vector is scored against a 🍎 fruit prototype and a 🏢 company prototype, and a final softmax over those two picks the meaning. Toggle the sentence and watch the whole chain flip.</p>
+      </>),
+      Diagram: AttnMechanism,
+      wide: true,
+      caption: "Query fixed on “apple.” q·kᵢ → ÷√d → softmax → weighted sum of V → a softmax over two sense prototypes that decides 🍎 fruit vs 🏢 company. Toggle the sentence and the decision flips.",
+    },
+    {
+      eyebrow: "STEP 05 · ATTENTION", title: "Many heads, many views", navTitle: "Many heads",
       Body: () => (<><p>Everything on the last page — projecting each token to a <b style={{ color: "var(--concept-query)" }}>Query</b>, <b style={{ color: "var(--concept-key)" }}>Key</b>, and <b style={{ color: "var(--concept-value)" }}>Value</b>, scoring, and blending — is <b>one attention head</b>. A head is a single, self-contained copy of that whole mechanism, with its own learned Q/K/V projections.</p><p>The catch: one head can only follow <i>one</i> kind of relationship at a time. So every layer runs <b>several heads in parallel</b> — each free to specialise (the word just before, the grammatical subject, broad context) — and their outputs are concatenated back into one vector. Toggle between three and watch the focus completely change.</p></>),
       Diagram: AttnHeads,
       caption: "Different heads, same sentence, different focus — concatenated into one richer representation.",
     },
     {
-      eyebrow: "STEP 05 · ATTENTION", title: "Making attention cheaper", navTitle: "Making it cheaper",
+      eyebrow: "STEP 06 · ATTENTION", title: "Making attention cheaper", navTitle: "Making it cheaper",
       Body: () => (<><p>Attention's gift is a <b>direct path</b> between any two tokens, computed in parallel — that's why it beat the older recurrent models. Its curse is the price: every token attends to every token, so cost grows with the <b>square</b> of the sequence length.</p><p>Modern variants chip away at that. Toggle between four to see how sharing keys and values across heads shrinks the running <b>KV cache</b> — with a different quality-versus-speed bargain each time.</p></>),
       Diagram: AttnKV,
       caption: "Same eight query heads throughout; only the shared K/V changes. Fewer K/V → a smaller cache to carry while generating.",
       deeper: [{ id: "attn-cheap", label: "Cost & efficient attention", kicker: "Appendix · attention", title: "Inside attention", wide: true, Panel: AttnDeepDoc }],
     },
     {
-      eyebrow: "STEP 06 · ATTENTION", title: "One block, stacked deep", navTitle: "Stacked deep",
+      eyebrow: "STEP 07 · ATTENTION", title: "One block, stacked deep", navTitle: "Stacked deep",
       Body: () => (<><p>Attention is half of a transformer block; a small feed-forward network refines each token afterward. Then the whole block repeats — dozens of times.</p><p>Stack enough of these and you get the <span className="term">forward pass</span>: raw vectors in, a next-token prediction out. That's the next chapter.</p></>),
       Diagram: () => (<div className="attn-stack">{[0, 1, 2, 3].map(i => (<div key={i} className="attn-layer" style={{ opacity: 1 - i * 0.18 }}><span className="attn-layer-lab">layer {i + 1}</span><span className="attn-layer-sub">attention → feed-forward</span></div>))}<div className="attn-layer-more">× N layers</div></div>),
       caption: "Each block mixes tokens with attention, then refines them. Depth is where understanding accrues.",

@@ -68,6 +68,18 @@
   .hid-out-ans { font-size: 15px; color: var(--fg1); }
   .hid-out-ans b { color: var(--ok-500); }
 
+  /* ---- effort dial (step 02) ---- */
+  .eff-cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); margin: 0 0 var(--sp-3); }
+  .eff-rows { display: flex; flex-direction: column; gap: 6px; }
+  .eff-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font-family: inherit; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 11px; cursor: pointer; transition: border-color var(--dur-1) var(--ease-standard), background var(--dur-1) var(--ease-standard); }
+  .eff-row:hover { border-color: var(--border-strong); }
+  .eff-row.is-sel { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--surface); }
+  .eff-row-lab { font-family: var(--font-mono); font-size: 12px; color: var(--fg1); width: 64px; flex: none; }
+  .eff-bar-track { flex: 1; height: 10px; background: var(--fill); border-radius: 999px; overflow: hidden; }
+  .eff-bar-fill { display: block; height: 100%; border-radius: 999px; transition: width var(--dur-3) var(--ease-in-out), background var(--dur-1) var(--ease-standard); }
+  .eff-row-pct { font-family: var(--font-mono); font-size: 12px; color: var(--fg2); width: 42px; text-align: right; flex: none; }
+  .eff-verdict { display: inline-block; margin-top: var(--sp-4); font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .03em; border: 1px solid; border-radius: var(--r-pill); padding: 3px 11px; }
+
   /* ---- bridge flow (shared media query host) ---- */
   @media (max-width: 560px) { .rlvr-grid { grid-template-columns: 1fr 1fr; } .ttc-reads { grid-template-columns: 1fr; } }
 </style>

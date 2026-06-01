@@ -54,7 +54,57 @@ function RlmBudget() {
   );
 }
 
-/* =================================================== 2 · RLVR ============== */
+/* =================================================== 2 · EFFORT =========== */
+const EFFORTS = [
+  { id: "minimal", lab: "Minimal", tok: 0 },
+  { id: "low",     lab: "Low",     tok: 600 },
+  { id: "medium",  lab: "Medium",  tok: 2500 },
+  { id: "high",    lab: "High",    tok: 7000 },
+];
+const EFF_TASKS = {
+  easy: { lab: "Easy question", acc: [96, 96, 97, 97],
+    note: "barely moves — and can overthink a simple thing" },
+  hard: { lab: "Hard problem", acc: [44, 63, 84, 92],
+    note: "more effort buys real accuracy" },
+};
+function RlmEffort() {
+  const [ei, setEi] = React.useState(2);
+  const [task, setTask] = React.useState("hard");
+  const eff = EFFORTS[ei], t = EFF_TASKS[task];
+  const latency = (0.4 + eff.tok / 1000 * 1.7).toFixed(1);
+  const cost = (eff.tok / 1000 * 0.9 + 0.2).toFixed(2);
+  const verdict = task === "easy"
+    ? (ei >= 2 ? { t: "effort wasted", c: "var(--warn-500)" } : { t: "fast & fine", c: "var(--ok-500)" })
+    : (ei === 0 ? { t: "rushed — likely wrong", c: "var(--err-500)" } : ei >= 2 ? { t: "worth the wait", c: "var(--ok-500)" } : { t: "getting there", c: "var(--warn-500)" });
+  return (
+    <div>
+      <div className="dg-seg" style={{ marginBottom: "var(--sp-4)" }}>
+        {Object.keys(EFF_TASKS).map(k => <button key={k} className={task === k ? "on" : ""} onClick={() => setTask(k)}>{EFF_TASKS[k].lab}</button>)}
+      </div>
+      <div className="fp-plate rd-plate">
+        <p className="eff-cap">effort dial — click a level · bars show accuracy on the {EFF_TASKS[task].lab.toLowerCase()}</p>
+        <div className="eff-rows">
+          {EFFORTS.map((e, i) => (
+            <button key={e.id} className={"eff-row" + (i === ei ? " is-sel" : "")} onClick={() => setEi(i)}>
+              <span className="eff-row-lab">{e.lab}</span>
+              <span className="eff-bar-track"><span className="eff-bar-fill" style={{ width: t.acc[i] + "%", background: i === ei ? "var(--ok-500)" : "var(--border-strong)" }} /></span>
+              <span className="eff-row-pct">{t.acc[i]}%</span>
+            </button>
+          ))}
+        </div>
+        <div className="ttc-reads" style={{ marginTop: "var(--sp-4)" }}>
+          <div className="ttc-read"><span className="ttc-read-lab">thinking tokens</span><b className="ttc-read-v" style={{ color: "var(--concept-output)" }}>{eff.tok.toLocaleString()}</b></div>
+          <div className="ttc-read"><span className="ttc-read-lab">latency</span><b className="ttc-read-v" style={{ color: "var(--warn-500)" }}>{latency}s</b></div>
+          <div className="ttc-read"><span className="ttc-read-lab">cost / answer</span><b className="ttc-read-v" style={{ color: "var(--err-500)" }}>${cost}</b></div>
+        </div>
+        <div className="eff-verdict" style={{ color: verdict.c, borderColor: verdict.c }}>{verdict.t}</div>
+      </div>
+      <p className="dg-read">Many reasoning models expose <b>effort</b> directly — minimal · low · medium · high (or a raw token budget). Turning it up spends more thinking, so latency and cost rise <i>every</i> time. Whether it's worth it depends entirely on the task: on a <b>hard</b> problem more effort buys accuracy; on an <b>easy</b> one it's wasted and the model can even <b>overthink</b>. Flip the task and watch the same dial pay off — or not. The skill is matching effort to difficulty, or letting the harness route it.</p>
+    </div>
+  );
+}
+
+/* =================================================== 3 · RLVR ============== */
 const RLVR_CHAINS = [
   { id: 0, steps: ["2x = 0.10", "x = 0.05"], ans: "$0.05", ok: true },
   { id: 1, steps: ["bat = 1.00", "ball = 0.10"], ans: "$0.10", ok: false },
@@ -159,10 +209,13 @@ const REASONING_CH = {
       Body: () => (<><p>A reasoning model can spend more or fewer tokens <i>before</i> it answers. That budget is a knob you control at answer time: more thinking, more accuracy — up to a point — but also more latency and more cost.</p><p>Drag the thinking budget and watch all three move together.</p></>),
       Diagram: RlmBudget, caption: "Accuracy rises with thinking, but with diminishing returns — while latency and cost keep climbing.",
       deeper: [{ id: "rlm-appx", label: "Test-time compute & training", kicker: "Appendix · RLMs", title: "How reasoning models work", wide: true, Panel: RlmDeepDoc }] },
-    { eyebrow: "STEP 02 · REASONING MODELS", title: "How reasoning is learned", navTitle: "Verifiable rewards",
+    { eyebrow: "STEP 02 · REASONING MODELS", title: "Turning the effort dial", navTitle: "Effort",
+      Body: () => (<><p>That budget is usually exposed to you as an <b>effort</b> setting — minimal, low, medium, high. It's the same idea as the slider, packaged as a knob you set per request.</p><p>But more effort isn't free, and it isn't always worth it. Switch between an easy question and a hard problem, then turn the dial, and watch when the extra thinking actually pays off.</p></>),
+      Diagram: RlmEffort, caption: "The same effort dial helps a lot on a hard problem and almost nothing on an easy one — where it just burns time and tokens." },
+    { eyebrow: "STEP 03 · REASONING MODELS", title: "How reasoning is learned", navTitle: "Verifiable rewards",
       Body: () => (<><p>Where does the habit of thinking come from? Not from imitating human scratchpads — from <b>reinforcement learning on verifiable problems</b>. The model samples many reasoning chains, and the ones that reach a checkably-correct answer get reinforced.</p><p>Sample several chains, then grade them and see which get rewarded.</p></>),
       Diagram: RlmRlvr, caption: "Many chains are sampled; only the verified-correct ones earn reward and shape the weights." },
-    { eyebrow: "STEP 03 · REASONING MODELS", title: "The trace you don't see", navTitle: "Hidden thinking",
+    { eyebrow: "STEP 04 · REASONING MODELS", title: "The trace you don't see", navTitle: "Hidden thinking",
       Body: () => (<><p>All that thinking happens somewhere — but you usually can't read it. Providers tend to keep the raw chain of thought <b>private</b>, surfacing only a clean answer or a tidied summary.</p><p>Toggle the trace to see what normally stays hidden.</p></>),
       Diagram: RlmHidden, caption: "The raw reasoning is usually masked; you receive the polished result." },
   ],
