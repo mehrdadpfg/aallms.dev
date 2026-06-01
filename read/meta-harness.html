@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Meta-harness — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- Meta-harness loop diagram (step 1) ---- */
+  .ml-stage { display: flex; flex-direction: column; gap: var(--sp-5); align-items: center; }
+  .ml-config { width: 100%; border: 1px dashed var(--border-strong); border-radius: var(--r-md);
+    background: var(--surface-sunken); padding: var(--sp-4); display: flex; flex-direction: column; gap: 9px; align-items: center; }
+  .ml-config-lab { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+  .ml-genes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .ml-gene { font-family: var(--font-mono); font-size: 11px; color: var(--fg2); border: 1px solid var(--border);
+    border-radius: var(--r-pill); padding: 3px 10px; background: var(--surface); }
+  .ml-flow { display: flex; align-items: stretch; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .ml-flow > .ic { color: var(--fg3); align-self: center; }
+  .ml-node { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center;
+    border: 1px solid var(--border-strong); border-radius: var(--r-md); background: var(--surface); padding: 11px 16px; min-width: 116px; }
+  .ml-node-ic { display: inline-flex; }
+  .ml-node b { font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--fg1); }
+  .ml-node-sub { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .ml-return { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px;
+    color: var(--fg2); border: 1px dashed color-mix(in srgb, var(--ok-500) 45%, transparent); border-radius: var(--r-pill); padding: 4px 12px; }
+  .ml-return .ic { color: var(--ok-500); }
+  @media (max-width: 640px) {
+    .ml-flow { flex-direction: column; align-items: center; }
+    .ml-flow > .ic { transform: rotate(90deg); }
+    .ml-node { width: 100%; }
+  }
+
+  /* ---- Meta-harness search step (step 2) — copied from _harness_seed.html ---- */
+  .mh-stage { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-4); }
+  .mh-head { display: flex; align-items: flex-end; gap: var(--sp-5); flex-wrap: wrap; }
+  .mh-gen { display: flex; flex-direction: column; gap: 2px; }
+  .mh-gen span { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); }
+  .mh-gen b { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--fg1); line-height: 1; }
+  .mh-gen b i { font-family: var(--font-mono); font-size: 13px; font-style: normal; color: var(--fg3); }
+  .mh-meter { flex: 1; min-width: 200px; display: grid; grid-template-columns: 1fr auto; grid-template-areas: "lab lab" "track pct"; align-items: center; gap: 3px 8px; }
+  .mh-meter-lab { grid-area: lab; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+  .mh-meter-track { grid-area: track; height: 9px; border-radius: var(--r-pill); background: var(--fill); overflow: hidden; }
+  .mh-meter-fill { height: 100%; border-radius: var(--r-pill); background: var(--ok-500); transition: width var(--dur-3) var(--ease-standard); }
+  .mh-meter-pct { grid-area: pct; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--ok-500); min-width: 26px; text-align: right; }
+
+  .mh-pop { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
+  .mh-empty { grid-column: 1 / -1; font-size: 13px; line-height: 1.55; color: var(--fg2); padding: var(--sp-4); text-align: center;
+    border: 1px dashed var(--border-strong); border-radius: var(--r-md); }
+  .mh-empty b { color: var(--accent); font-weight: 600; }
+  .mh-cand { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: var(--sp-3);
+    display: flex; flex-direction: column; gap: 7px; transition: border-color var(--dur-2), box-shadow var(--dur-2), transform var(--dur-2);
+    animation: mh-in var(--dur-3) var(--ease-spring) both; }
+  @keyframes mh-in { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+  .mh-cand.is-top { border-color: var(--ok-500); box-shadow: 0 0 0 1px var(--ok-500); }
+  .mh-cand.is-kept { border-style: dashed; }
+  .mh-cand-head { display: flex; align-items: center; gap: 6px; }
+  .mh-cand-id { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+  .mh-badge { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .05em;
+    text-transform: uppercase; border-radius: var(--r-pill); padding: 1px 7px; margin-left: auto; }
+  .mh-badge-keep { color: var(--fg2); background: var(--fill); }
+  .mh-badge-win { color: var(--on-accent); background: var(--ok-500); margin-left: auto; }
+  .mh-badge-win .ic { color: var(--on-accent); }
+  .mh-genes { display: flex; flex-wrap: wrap; gap: 4px; }
+  .mh-gene { font-family: var(--font-mono); font-size: 9.5px; border-radius: var(--r-xs); padding: 2px 6px; line-height: 1.3; }
+  .mh-score { display: flex; align-items: center; gap: 7px; margin-top: auto; }
+  .mh-score-track { flex: 1; height: 6px; border-radius: var(--r-pill); background: var(--fill); overflow: hidden; }
+  .mh-score-fill { height: 100%; border-radius: var(--r-pill); background: var(--concept-query); transition: width var(--dur-3) var(--ease-standard); }
+  .mh-cand.is-top .mh-score-fill { background: var(--ok-500); }
+  .mh-score b { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--fg1); min-width: 20px; text-align: right; }
+  .mh-feedback { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--fg3);
+    border-top: 1px dashed var(--border); padding-top: 9px; }
+  .mh-feedback .ic { color: var(--fg3); }
+  @media (max-width: 640px) {
+    .mh-pop { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="meta-harness.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={METAHARNESS_CH} section={SEC_HARNESS} />
+    );
+  </script>
+</body>
+</html>

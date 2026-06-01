@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Vectorless retrieval — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- copied from context-engineering.html · bv-* (PageIndex tree) ---- */
+  .bv-stage { min-height: 230px; display: flex; }
+  .bv-tree { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: var(--sp-4) var(--sp-2); }
+  .bv-branch { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--fg2);
+    padding: 7px 11px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); align-self: flex-start; }
+  .bv-branch .ic { color: var(--fg3); }
+  .bv-branch.is-hit { color: var(--fg1); border-color: var(--accent); background: var(--accent-tint); }
+  .bv-branch.is-hit .ic { color: var(--accent); }
+  .bv-here { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-left: 4px; }
+  .bv-cap { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .bv-tree .bv-cap { text-align: left; margin-top: auto; padding-top: var(--sp-3); }
+
+  /* ---- STEP 01 · embedding trouble · vd-* ---- */
+  .vd-query { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--fg1);
+    padding: 8px 13px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); }
+  .vd-query .ic { color: var(--accent); }
+  .vd-rail { position: relative; height: 1px; margin: var(--sp-5) 0 var(--sp-4); background: linear-gradient(90deg, var(--accent), var(--border)); }
+  .vd-rail-l { position: absolute; right: 0; top: -7px; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); background: var(--surface); padding-left: 8px; }
+  .vd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+  @media (max-width: 640px) { .vd-pair { grid-template-columns: 1fr; } }
+  .vd-card { display: flex; flex-direction: column; gap: 6px; padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface-sunken); }
+  .vd-card-h { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+  .vd-card-body { font-size: 14px; color: var(--fg1); font-weight: 500; }
+  .vd-card-why { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+  .vd-card.is-wrong { border-color: color-mix(in srgb, var(--err-500) 40%, var(--border)); }
+  .vd-card.is-wrong .vd-card-h { color: var(--err-500); }
+  .vd-card.is-right { border-color: color-mix(in srgb, var(--ok-500) 40%, var(--border)); }
+  .vd-card.is-right .vd-card-h { color: var(--ok-500); }
+  .vd-note { margin: var(--sp-4) 0 0; font-size: 13.5px; line-height: 1.55; color: var(--fg2); }
+
+  /* ---- STEP 02 · PageIndex descent · vt-* ---- */
+  .vt-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--sp-5); align-items: stretch; }
+  @media (max-width: 720px) { .vt-grid { grid-template-columns: 1fr; } }
+  .vt-tree { padding-top: 0; }
+  .vt-branch { transition: margin-left .2s ease, border-color .2s ease, background .2s ease; }
+  .vt-branch.vt-on { color: var(--fg1); border-color: var(--border-strong); }
+  .vt-cursor { margin-left: 4px; display: inline-flex; color: var(--accent); }
+  .vt-cursor .ic { color: var(--accent); }
+  .vt-side { display: flex; flex-direction: column; gap: 8px; padding: var(--sp-4); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-sunken); }
+  .vt-side-h { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+  .vt-side-h .ic { color: var(--accent); }
+  .vt-reason { font-size: 14px; line-height: 1.55; color: var(--fg1); border-left: 2px solid var(--accent); padding-left: var(--sp-3); }
+  .vt-read { display: flex; flex-direction: column; gap: 6px; margin-top: auto; padding: var(--sp-3); border-radius: var(--r-sm); background: var(--accent-tint); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); font-size: 13px; line-height: 1.5; color: var(--fg1); }
+  .vt-read-h { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+
+  /* ---- STEP 03 · vectors vs vectorless · vc-* / vw-* ---- */
+  .vc-table { display: flex; flex-direction: column; }
+  .vc-row { display: grid; grid-template-columns: 0.7fr 1fr 1fr; gap: var(--sp-3); padding: 9px 0; border-bottom: 1px solid var(--border); align-items: start; }
+  .vc-row:last-child { border-bottom: none; }
+  .vc-head { border-bottom: 1px solid var(--border-strong); padding-bottom: 11px; }
+  .vc-k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--fg3); }
+  .vc-cell { font-size: 13.5px; line-height: 1.45; color: var(--fg2); }
+  .vc-head .vc-cell { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 12px; text-transform: none; letter-spacing: 0; }
+  .vc-head .vc-emb { color: var(--concept-value); }
+  .vc-head .vc-emb .ic { color: var(--concept-value); }
+  .vc-head .vc-less { color: var(--accent); }
+  .vc-head .vc-less .ic { color: var(--accent); }
+  @media (max-width: 640px) { .vc-row { grid-template-columns: 1fr; gap: 4px; } .vc-k { margin-top: 8px; } }
+
+  .vw-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (max-width: 720px) { .vw-grid { grid-template-columns: 1fr; } }
+  .vw-card { display: flex; flex-direction: column; gap: 7px; padding: var(--sp-4); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+  .vw-h { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-family: var(--font-mono); font-size: 12.5px; color: var(--fg1); }
+  .vw-b { margin: 0; font-size: 13px; line-height: 1.55; color: var(--fg2); }
+  .vw-vec { border-color: color-mix(in srgb, var(--concept-value) 35%, var(--border)); }
+  .vw-vec .vw-h .ic { color: var(--concept-value); }
+  .vw-less { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+  .vw-less .vw-h .ic { color: var(--accent); }
+  .vw-both .vw-h .ic { color: var(--concept-key); }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="../lib/diagrams.jsx"></script>
+  <script type="text/babel" src="vectorless.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={VECTORLESS_CH} section={SEC_CONTEXT} />
+    );
+  </script>
+</body>
+</html>

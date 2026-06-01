@@ -1,0 +1,373 @@
+/* ============================================================================
+   aallms — Design System Foundations  (aallms.dev)
+   colors_and_type.css
+
+   An explorable, step-by-step explainer for how LLMs work.
+   Editorial readability (distill.pub) + a schematic / blueprint diagram layer.
+
+   Load order in HTML:
+     1) Google Fonts <link> (see README "Fonts")
+     2) this file
+   Everything below is plain CSS custom properties — no build step.
+   ========================================================================== */
+
+/* If you prefer self-contained loading, this import works too (CDN). The
+   preview HTML files <link> the fonts in <head> instead, which is faster. */
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ===========================================================================
+   1. RAW PALETTE  —  the physical colors. Do not reference these directly in
+   product code; use the semantic tokens in section 3. Kept here as the source
+   of truth so the whole system stays in tune.
+   =========================================================================== */
+:root {
+  /* --- Warm paper neutrals (the "page") --- */
+  --paper-50:  #FDFBF7;   /* lightest — page bg, light mode */
+  --paper-100: #F8F4EC;   /* raised surface / sunken wells */
+  --paper-200: #EFE9DD;   /* hairline fills, code blocks */
+  --paper-300: #E3DBCB;   /* borders, dividers */
+  --paper-400: #D4CBB8;   /* deepest paper fill */
+
+  /* --- Warm ink (text + dark canvas) --- */
+  --ink-900: #19170F;     /* near-black, warm — primary text on paper */
+  --ink-700: #3A362C;     /* dark canvas base bg */
+  --ink-600: #565049;     /* secondary text on paper */
+  --ink-500: #6E675C;     /* (slightly lighter) */
+  --ink-400: #8C8475;     /* tertiary text / captions on paper */
+  --ink-300: #B4AC9C;     /* disabled, faint marks */
+
+  /* --- Signal vermilion (THE brand accent — interactive affordances only) --- */
+  --signal-700: #B22C12;  /* pressed */
+  --signal-600: #D43A1B;  /* hover */
+  --signal-500: #E8492A;  /* base brand accent */
+  --signal-400: #F36B4E;  /* light / on-dark */
+  --signal-100: #FBE3DA;  /* tint wash, focus ring halo */
+
+  /* --- Dark canvas neutrals (dark mode "page") --- */
+  --canvas-900: #14130E;  /* deepest bg */
+  --canvas-850: #1C1A14;  /* page bg, dark mode */
+  --canvas-800: #24221A;  /* raised surface */
+  --canvas-700: #312E24;  /* borders, dividers */
+  --canvas-600: #423E31;  /* strong border / hairline on dark */
+  --canvas-fg1: #F4EFE4;  /* primary text on dark */
+  --canvas-fg2: #BAB3A3;  /* secondary text on dark */
+  --canvas-fg3: #847C6C;  /* tertiary text on dark */
+
+  /* --- Concept palette (CATEGORICAL — color-codes diagram entities) ---
+     Used to teach: Query / Key / Value / Output, layers, heads, etc.
+     These are deliberately distinct hues that stay legible on paper & canvas. */
+  --concept-query:  #4C5FD5;  /* indigo  — Query   (Q) */
+  --concept-key:    #1F9E8C;  /* teal    — Key     (K) */
+  --concept-value:  #E0992E;  /* amber   — Value   (V) */
+  --concept-output: #C0407E;  /* magenta — Output / logits */
+  --concept-token:  var(--ink-600); /* tokens default to ink, gain color when active */
+
+  /* tints (light backgrounds for labelled regions) */
+  --concept-query-tint:  #E4E7FA;
+  --concept-key-tint:    #D9F1ED;
+  --concept-value-tint:  #FAEED6;
+  --concept-output-tint: #F8DEEB;
+
+  /* --- Attention heat scale (SEQUENTIAL — attention weights 0 → 1) --- */
+  --heat-0: #F4EEE2;  /* ~0.0  cold (no attention) */
+  --heat-1: #FBD9A8;
+  --heat-2: #F4A14E;
+  --heat-3: #E8492A;  /* ties to signal — "hot" */
+  --heat-4: #9E1B0B;  /* ~1.0  hottest */
+
+  /* --- Status (used sparingly — this is a teaching site, not a dashboard) --- */
+  --ok-500:    #1F9E6A;
+  --ok-tint:   #DCF1E6;
+  --warn-500:  #C98A10;
+  --warn-tint: #F7ECCB;
+  --err-500:   #CC3322;
+  --err-tint:  #F7DCD7;
+}
+
+/* ===========================================================================
+   2. TYPOGRAPHY PRIMITIVES — families, weights, fluid scale, leading, tracking
+   =========================================================================== */
+:root {
+  /* Families */
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;   /* headings, pull-quotes, editorial voice */
+  --font-body:    'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; /* UI + running text */
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; /* code, tokens, step #s, labels */
+
+  /* Weights */
+  --w-regular: 400;
+  --w-medium:  500;
+  --w-semibold: 600;
+  --w-bold:    700;
+
+  /* Fluid type scale (clamp: min @ ~360px → max @ ~1280px) — major-third-ish */
+  --fs-display: clamp(2.75rem, 1.6rem + 5vw, 4.5rem);   /* hero / chapter opener */
+  --fs-h1:      clamp(1.85rem, 1.3rem + 2.2vw, 2.5rem);
+  --fs-h2:      clamp(1.45rem, 1.15rem + 1.4vw, 1.85rem);
+  --fs-h3:      clamp(1.2rem, 1.05rem + 0.7vw, 1.4rem);
+  --fs-lead:    clamp(1.0rem, 0.96rem + 0.3vw, 1.1rem);  /* article intro / lede (~16–17.6px) */
+  --fs-body:    1rem;   /* 16px — long-form reading default */
+  --fs-small:   0.9rem;
+  --fs-caption: 0.8125rem;
+  --fs-mono:    0.9375rem;   /* code default */
+  --fs-label:   0.75rem;     /* eyebrow / step labels (used UPPERCASE) */
+
+  /* Leading */
+  --lh-tight:  1.08;   /* display */
+  --lh-snug:   1.25;   /* headings */
+  --lh-body:   1.62;   /* long-form reading */
+  --lh-mono:   1.6;
+
+  /* Tracking */
+  --tr-tight:  -0.02em;  /* large display */
+  --tr-normal: 0;
+  --tr-label:  0.14em;   /* uppercase eyebrows / step labels */
+
+  /* Reading measure */
+  --measure: 68ch;       /* ideal long-form column width */
+}
+
+/* ===========================================================================
+   3. SEMANTIC TOKENS — reference THESE in product code.
+   Default = light "paper" theme.
+   =========================================================================== */
+:root,
+[data-theme="light"] {
+  --bg:          var(--paper-50);
+  --surface:     #FFFFFF;
+  --surface-sunken: var(--paper-100);
+  --fill:        var(--paper-200);
+  --border:      var(--paper-300);
+  --border-strong: var(--ink-300);
+
+  --fg1: var(--ink-900);   /* primary text / headings */
+  --fg2: var(--ink-600);   /* secondary / body-muted */
+  --fg3: var(--ink-400);   /* captions, metadata */
+  --fg-disabled: var(--ink-300);
+
+  --accent:        var(--signal-500);
+  --accent-hover:  var(--signal-600);
+  --accent-press:  var(--signal-700);
+  --accent-tint:   var(--signal-100);
+  --on-accent:     #FFFFFF;
+
+  --focus-ring:    var(--signal-500);
+  --link:          var(--signal-600);
+  --code-bg:       var(--paper-200);
+  --code-fg:       var(--ink-900);
+
+  /* diagram surface (the "schematic" plate) */
+  --plate-bg:      #FCFAF4;
+  --plate-grid:    #E7E0D2;   /* graph-paper lines */
+  --plate-grid-strong: #DAD1BF;
+
+  color-scheme: light;
+}
+
+/* --- Dark "canvas" theme --- */
+[data-theme="dark"] {
+  --bg:          var(--canvas-850);
+  --surface:     var(--canvas-800);
+  --surface-sunken: var(--canvas-900);
+  --fill:        var(--canvas-700);
+  --border:      var(--canvas-700);
+  --border-strong: var(--canvas-600);
+
+  --fg1: var(--canvas-fg1);
+  --fg2: var(--canvas-fg2);
+  --fg3: var(--canvas-fg3);
+  --fg-disabled: #5A5447;
+
+  --accent:        var(--signal-400);
+  --accent-hover:  var(--signal-500);
+  --accent-press:  var(--signal-600);
+  --accent-tint:   #3A1E16;
+  --on-accent:     #1A0E0A;
+
+  /* concept tints must darken on canvas too — otherwise labelled chips keep
+     their light paper backgrounds and the light --fg1 text vanishes on them */
+  --concept-query-tint:  color-mix(in srgb, var(--concept-query) 26%, var(--canvas-800));
+  --concept-key-tint:    color-mix(in srgb, var(--concept-key) 26%, var(--canvas-800));
+  --concept-value-tint:  color-mix(in srgb, var(--concept-value) 26%, var(--canvas-800));
+  --concept-output-tint: color-mix(in srgb, var(--concept-output) 26%, var(--canvas-800));
+
+  /* status tints likewise — a light ok/warn/err wash would make --fg1 text
+     (white on canvas) unreadable; darken them so text reads in both themes */
+  --ok-tint:   color-mix(in srgb, var(--ok-500) 24%, var(--canvas-800));
+  --warn-tint: color-mix(in srgb, var(--warn-500) 24%, var(--canvas-800));
+  --err-tint:  color-mix(in srgb, var(--err-500) 24%, var(--canvas-800));
+
+  --focus-ring:    var(--signal-400);
+  --link:          var(--signal-400);
+  --code-bg:       var(--canvas-900);
+  --code-fg:       var(--canvas-fg1);
+
+  --plate-bg:      #1A1812;
+  --plate-grid:    #2C2920;
+  --plate-grid-strong: #3A3629;
+
+  color-scheme: dark;
+}
+
+/* ===========================================================================
+   4. SEMANTIC TYPE CLASSES — apply directly, or copy the rules.
+   =========================================================================== */
+.t-eyebrow {            /* step label / section eyebrow */
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.t-display {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: var(--w-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tr-tight);
+  color: var(--fg1);
+}
+.t-h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  font-weight: var(--w-semibold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tr-tight);
+  color: var(--fg1);
+}
+.t-h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: var(--w-semibold);
+  line-height: var(--lh-snug);
+  color: var(--fg1);
+}
+.t-h3 {
+  font-family: var(--font-body);
+  font-size: var(--fs-h3);
+  font-weight: var(--w-semibold);
+  line-height: var(--lh-snug);
+  color: var(--fg1);
+}
+.t-lead {                /* article lede / chapter intro */
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  font-weight: var(--w-regular);
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--fg2);
+}
+.t-body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-weight: var(--w-regular);
+  line-height: var(--lh-body);
+  color: var(--fg1);
+  max-width: var(--measure);
+}
+.t-small {
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--fg2);
+}
+.t-caption {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+  color: var(--fg3);
+}
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  line-height: var(--lh-mono);
+  color: var(--code-fg);
+}
+
+/* ===========================================================================
+   5. SPACING, RADII, SHADOW, MOTION — system primitives
+   =========================================================================== */
+:root {
+  /* Spacing — 4px base, geometric-ish. Use for padding/gap/margin. */
+  --sp-0: 0;
+  --sp-1: 0.25rem;   /* 4  */
+  --sp-2: 0.5rem;    /* 8  */
+  --sp-3: 0.75rem;   /* 12 */
+  --sp-4: 1rem;      /* 16 */
+  --sp-5: 1.5rem;    /* 24 */
+  --sp-6: 2rem;      /* 32 */
+  --sp-7: 3rem;      /* 48 */
+  --sp-8: 4rem;      /* 64 */
+  --sp-9: 6rem;      /* 96 — section rhythm */
+
+  /* Radii — restrained. Schematic, not bubbly. */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  /* Elevation — warm, soft, low-contrast (paper, not material) */
+  --sh-1: 0 1px 2px rgba(40, 32, 20, 0.06), 0 1px 1px rgba(40, 32, 20, 0.04);
+  --sh-2: 0 2px 6px rgba(40, 32, 20, 0.07), 0 1px 2px rgba(40, 32, 20, 0.06);
+  --sh-3: 0 8px 24px rgba(40, 32, 20, 0.10), 0 2px 6px rgba(40, 32, 20, 0.06);
+  --sh-focus: 0 0 0 3px var(--accent-tint);
+  --sh-inset: inset 0 1px 2px rgba(40, 32, 20, 0.06);
+
+  /* Motion — four named feels (see README "Motion") */
+  --ease-mechanical: linear;                               /* stepwise diagram ticks */
+  --ease-standard:   cubic-bezier(0.22, 0.61, 0.36, 1);    /* eased UI default */
+  --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);    /* springy / physics-y */
+  --ease-in-out:     cubic-bezier(0.65, 0, 0.35, 1);       /* scroll reveals */
+
+  --dur-1: 120ms;   /* taps, hovers */
+  --dur-2: 240ms;   /* standard transition */
+  --dur-3: 420ms;   /* reveals, larger moves */
+  --dur-4: 800ms;   /* diagram playback step */
+}
+
+/* ===========================================================================
+   6. PRIMITIVES YOU CAN LEAN ON
+   =========================================================================== */
+.fp-plate {                    /* the schematic "graph-paper" diagram surface */
+  background-color: var(--plate-bg);
+  background-image:
+    linear-gradient(var(--plate-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--plate-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.fp-focus:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ===========================================================================
+   Smooth cross-document navigation (landing <-> chapters).
+   Each page is its own HTML file; this fades between them instead of a hard
+   cut. Supported browsers only; a no-op elsewhere. Paired with the shared
+   persisted theme so the palette never flips mid-transition.
+   =========================================================================== */
+/* site footer (GitHub / LinkedIn / Sources) */
+.site-foot { border-top: 1px solid var(--border); background: var(--bg); }
+.site-foot-inner { max-width: 880px; margin: 0 auto; padding: 18px var(--sp-6); display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+.site-foot-brand { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--fg2); }
+.site-foot-brand .brand-llm { color: var(--accent); }
+.site-foot-brand .brand-dev { color: var(--fg3); }
+.site-foot-links { display: flex; align-items: center; gap: var(--sp-4); }
+.site-foot-link { text-decoration: none; font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--fg2); }
+.site-foot-link:hover { color: var(--accent); }
+.site-foot-ic { color: var(--fg3); display: inline-flex; transition: color var(--dur-1, .12s) ease, transform var(--dur-1, .12s) ease; }
+.site-foot-ic:hover { color: var(--accent); transform: translateY(-1px); }
+
+@view-transition { navigation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 280ms; animation-timing-function: var(--ease-in-out, cubic-bezier(.4,0,.2,1)); }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+}

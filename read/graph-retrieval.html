@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Graph retrieval — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- graph stage (copied from context-engineering.html · bv-*) ---- */
+  .bv-stage { min-height: 230px; display: flex; }
+  .bv-space { position: relative; flex: 1; min-height: 230px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-sunken); overflow: hidden; }
+  .bv-edges { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .bv-node { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-mono); font-size: 10.5px; color: var(--fg2);
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 9px; display: inline-flex; align-items: center; gap: 6px; z-index: 1;
+    transition: border-color .3s, box-shadow .3s, color .3s; }
+  .bv-node.is-hop { color: var(--fg1); border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .bv-node.is-current { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 26%, transparent); z-index: 3; }
+  .bv-hop { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 9px; }
+
+  /* ---- step 02 · edge labels ---- */
+  .gr-edge-lab { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .02em;
+    color: var(--fg3); background: var(--surface-sunken); padding: 1px 5px; border-radius: 999px; z-index: 0; white-space: nowrap; }
+
+  /* ---- step 01 · multi-hop facts ---- */
+  .gr-ask { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: var(--r-md);
+    background: var(--accent-tint); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .gr-ask-icon { display: inline-flex; color: var(--accent); }
+  .gr-ask-q { font-size: 14.5px; font-weight: 600; color: var(--fg1); }
+  .gr-note { margin: var(--sp-4) 0 var(--sp-3); font-size: 13.5px; line-height: 1.55; color: var(--fg2); }
+  .gr-facts { display: flex; flex-direction: column; gap: 7px; }
+  .gr-fact { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: var(--r-sm);
+    border: 1px solid var(--border); background: var(--surface-sunken); opacity: .42; transition: opacity .3s, border-color .3s, background .3s; }
+  .gr-fact.is-on { opacity: 1; border-color: var(--concept-value); background: var(--surface); }
+  .gr-fact-n { flex: none; display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%;
+    font-family: var(--font-mono); font-size: 10px; color: var(--fg3); background: var(--surface); border: 1px solid var(--border-strong); }
+  .gr-fact.is-on .gr-fact-n { color: #fff; background: var(--concept-value); border-color: var(--concept-value); }
+  .gr-fact-t { flex: 1; font-size: 13px; color: var(--fg1); }
+  .gr-fact-tag { flex: none; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); }
+  .gr-verdict { display: flex; align-items: center; gap: 8px; margin-top: var(--sp-4); padding: 8px 11px; border-radius: var(--r-sm);
+    font-size: 12.5px; color: var(--fg2); background: var(--surface-sunken); border: 1px dashed var(--border-strong); transition: all .3s; }
+  .gr-verdict .ic { color: var(--fg3); }
+  .gr-verdict.is-on { color: var(--fg1); background: var(--ok-tint); border-color: var(--ok-500); border-style: solid; }
+  .gr-verdict.is-on .ic { color: var(--ok-500); }
+
+  /* ---- step 03 · traversal + assembled answer ---- */
+  .gr-stage { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--sp-5); align-items: stretch; }
+  @media (max-width: 720px) { .gr-stage { grid-template-columns: 1fr; } }
+  .gr-answer { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: var(--sp-4); }
+  .gr-answer-h { margin: 0; display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--fg3); }
+  .gr-answer-h .ic { color: var(--accent); }
+  .gr-answer-body { flex: 1; font-size: 14px; line-height: 1.6; color: var(--fg1); }
+  .gr-answer-empty { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg3); }
+  .gr-frag { animation: gr-frag-in .35s var(--ease-standard) both; }
+  @keyframes gr-frag-in { from { opacity: 0; } to { opacity: 1; } }
+  .gr-answer-done { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--accent); background: var(--accent-tint); border-radius: var(--r-sm); padding: 5px 8px; align-self: flex-start; }
+
+  /* ---- step 04 · tradeoffs ---- */
+  .gr-trade-head { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-4); }
+  .gr-trade-leg { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--fg2); }
+  .gr-swatch { width: 11px; height: 11px; border-radius: 3px; }
+  .gr-swatch--vec { background: var(--concept-key); }
+  .gr-swatch--graph { background: var(--accent); }
+  .gr-trade { display: flex; flex-direction: column; gap: var(--sp-4); }
+  .gr-trow { display: grid; grid-template-columns: 1fr; gap: 5px; }
+  .gr-trow-head { display: flex; align-items: center; gap: 7px; }
+  .gr-trow-head .ic { color: var(--fg3); }
+  .gr-trow-lab { font-size: 13px; font-weight: 600; color: var(--fg1); }
+  .gr-bars { display: flex; flex-direction: column; gap: 4px; }
+  .gr-bar { height: 9px; border-radius: 999px; background: var(--surface-sunken); border: 1px solid var(--border); overflow: hidden; }
+  .gr-bar-fill { display: block; height: 100%; border-radius: 999px; transition: width .4s var(--ease-standard); }
+  .gr-bar-fill--vec { background: var(--concept-key); }
+  .gr-bar-fill--graph { background: var(--accent); }
+  .gr-trow-note { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .gr-hybrid { display: flex; align-items: flex-start; gap: 9px; margin-top: var(--sp-5); padding: 10px 12px; border-radius: var(--r-md);
+    background: var(--accent-tint); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); font-size: 13px; line-height: 1.55; color: var(--fg1); }
+  .gr-hybrid .ic { flex: none; color: var(--accent); margin-top: 2px; }
+  .gr-hybrid b { font-weight: 600; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="../lib/diagrams.jsx"></script>
+  <script type="text/babel" src="graph-retrieval.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={GRAPH_CH} section={SEC_CONTEXT} />
+    );
+  </script>
+</body>
+</html>

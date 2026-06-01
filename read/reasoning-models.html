@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Reasoning models — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- test-time compute (step 01) ---- */
+  .ttc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+  .ttc-head-lab { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+  .ttc-head-lab .ic { color: var(--concept-output); }
+  .ttc-head-tok { font-family: var(--font-mono); font-size: 13px; color: var(--fg1); }
+  .ttc-svg { display: block; width: 100%; height: auto; }
+  .ttc-axis { stroke: var(--border); stroke-width: 1; }
+  .ttc-line { fill: none; stroke: var(--ok-500); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .ttc-area { fill: var(--ok-tint); opacity: .5; stroke: none; }
+  .ttc-now { stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 3 3; }
+  .ttc-dot { fill: var(--surface); stroke: var(--ok-500); stroke-width: 2.4; }
+  .ttc-axlab { display: flex; justify-content: space-between; margin-top: 2px; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .04em; color: var(--fg3); }
+  .ttc-reads { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-top: var(--sp-4); }
+  .ttc-read { display: flex; flex-direction: column; gap: 3px; padding: var(--sp-3); border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface-sunken); }
+  .ttc-read-lab { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); }
+  .ttc-read-v { font-family: var(--font-mono); font-size: 18px; line-height: 1; }
+
+  /* ---- RLVR / verifiable rewards (step 02) ---- */
+  .rlvr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); }
+  .rlvr-chain { display: flex; flex-direction: column; gap: 4px; padding: var(--sp-3); border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface-sunken); opacity: .45; transform: translateY(6px); transition: opacity .4s ease, transform .4s ease, border-color .4s ease, background .4s ease; }
+  .rlvr-chain.in { opacity: 1; transform: translateY(0); }
+  .rlvr-chain.keep { border-color: var(--ok-500); background: var(--ok-tint); }
+  .rlvr-chain.drop { opacity: .4; border-style: dashed; }
+  .rlvr-chain-head { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); }
+  .rlvr-step { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg2); }
+  .rlvr-dim { color: var(--fg3); font-style: italic; }
+  .rlvr-ans { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--fg1); margin-top: 2px; }
+  .rlvr-ans.ok { color: var(--ok-500); }
+  .rlvr-ans.no { color: var(--err-500); }
+  .rlvr-tag { align-self: flex-start; font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; padding: 2px 7px; border-radius: var(--r-pill); }
+  .rlvr-tag.rew { background: var(--ok-500); color: #fff; }
+  .rlvr-tag.pen { background: var(--fill); color: var(--fg3); }
+  .rlvr-verdict { display: flex; align-items: center; gap: 8px; margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border); font-size: 13px; color: var(--fg2); }
+  .rlvr-verdict .ic { color: var(--ok-500); }
+
+  /* ---- hidden chain of thought (step 03) ---- */
+  .hid-stack { display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+  .hid-cot { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface-sunken); overflow: hidden; transition: border-color .3s ease; }
+  .hid-cot.is-open { border-color: var(--concept-output); }
+  .hid-cot-head { display: flex; align-items: center; gap: 7px; padding: var(--sp-3); font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); border-bottom: 1px solid var(--border); }
+  .hid-cot-head .ic { color: var(--concept-output); }
+  .hid-cot-tag { margin-left: auto; text-transform: none; letter-spacing: .02em; color: var(--fg3); }
+  .hid-cot-body { display: flex; flex-direction: column; gap: 5px; padding: var(--sp-3); }
+  .hid-line { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg2); }
+  .hid-masked { gap: 7px; }
+  .hid-dots { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; color: var(--border-strong); user-select: none; }
+  .hid-arrow { display: flex; justify-content: center; color: var(--fg3); }
+  .hid-out { padding: var(--sp-3); border: 1px solid var(--ok-500); border-radius: var(--r-sm); background: var(--ok-tint); }
+  .hid-out-lab { display: block; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); margin-bottom: 4px; }
+  .hid-out-ans { font-size: 15px; color: var(--fg1); }
+  .hid-out-ans b { color: var(--ok-500); }
+
+  /* ---- bridge flow (shared media query host) ---- */
+  @media (max-width: 560px) { .rlvr-grid { grid-template-columns: 1fr 1fr; } .ttc-reads { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="reasoning-models.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={REASONING_CH} section={SEC_LLM} />
+    );
+  </script>
+</body>
+</html>

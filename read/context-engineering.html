@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Context engineering — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- STEP 05 · retrieval / RAG ---- */
+  .rag-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--sp-5); align-items: stretch; }
+  @media (max-width: 720px) { .rag-grid { grid-template-columns: 1fr; } }
+  .rag-space { position: relative; aspect-ratio: 1 / 0.82; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-sunken);
+    background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 14px 14px; overflow: hidden; }
+  .rag-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .rag-dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--rc); transform: translate(-50%, -50%);
+    opacity: .42; transition: all var(--dur-3, .28s) var(--ease-standard); box-shadow: 0 0 0 0 transparent; }
+  .rag-dot.is-hit { opacity: 1; width: 14px; height: 14px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--rc) 26%, transparent); }
+  .rag-dot-lab { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-family: var(--font-mono);
+    font-size: 9.5px; color: var(--fg3); opacity: 0; transition: opacity var(--dur-3, .28s); pointer-events: none; }
+  .rag-dot.is-hit .rag-dot-lab { opacity: 1; color: var(--fg2); }
+  .rag-query { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: grid; place-items: center; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 28%, transparent);
+    transition: all var(--dur-3, .28s) var(--ease-spring); z-index: 2; }
+  .rag-window { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: var(--sp-4); }
+  .rag-window-h { margin: 0 0 2px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); }
+  .rag-window-fixed { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg3); padding: 6px 8px; border-radius: var(--r-sm);
+    background: var(--surface-sunken); border: 1px dashed var(--border); }
+  .rag-window-chunk { position: relative; font-size: 12px; color: var(--fg1); padding: 7px 9px 7px 11px; border-radius: var(--r-sm);
+    background: var(--surface-sunken); border-left: 3px solid var(--border-strong); display: flex; align-items: center; gap: 8px; }
+  .rag-window-rank { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .rag-window-sim { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--accent); }
+
+  /* ---- STEP 06 · beyond vectors ---- */
+  .bv-stage { min-height: 230px; display: flex; }
+  .bv-space { position: relative; flex: 1; min-height: 230px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-sunken); overflow: hidden; }
+  .bv-edges { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .bv-node { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-mono); font-size: 10.5px; color: var(--fg2);
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 9px; display: inline-flex; align-items: center; gap: 6px; z-index: 1; }
+  .bv-node.is-hop { color: var(--fg1); border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .bv-hop { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 9px; }
+  .bv-tree { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: var(--sp-4) var(--sp-2); }
+  .bv-branch { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--fg2);
+    padding: 7px 11px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); align-self: flex-start; }
+  .bv-branch .ic { color: var(--fg3); }
+  .bv-branch.is-hit { color: var(--fg1); border-color: var(--accent); background: var(--accent-tint); }
+  .bv-branch.is-hit .ic { color: var(--accent); }
+  .bv-here { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-left: 4px; }
+  .bv-cap { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .bv-tree .bv-cap { position: static; text-align: left; margin-top: auto; padding-top: var(--sp-3); }
+
+  /* ---- STEP 07 · memory ---- */
+  .mem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); }
+  @media (max-width: 720px) { .mem-grid { grid-template-columns: 1fr; } }
+  .mem-col { display: flex; flex-direction: column; gap: 8px; }
+  .mem-col-h { margin: 0; display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--fg3); }
+  .mem-col-h .ic { color: var(--fg2); }
+  .mem-small { text-transform: none; letter-spacing: 0; color: var(--fg3); opacity: .8; }
+  .mem-window { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: var(--sp-4); display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+  .mem-turn-user { font-size: 13px; color: var(--fg1); line-height: 1.5; }
+  .mem-pull { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--accent); background: var(--accent-tint); border-radius: var(--r-sm); padding: 4px 8px; }
+  .mem-store { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-sunken); padding: var(--sp-4); display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+  .mem-fact { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--fg1); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 5px 9px; transition: all var(--dur-3, .28s) var(--ease-standard); }
+  .mem-fact .ic { color: var(--ok-500); }
+  .mem-fact.is-new { border-color: var(--ok-500); background: var(--ok-tint); color: var(--fg1); }
+  .mem-empty { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+  .mem-meter { margin-top: var(--sp-4); }
+  .mem-meter-lab { font-family: var(--font-mono); font-size: 11px; color: var(--fg2); }
+
+  /* ---- APPENDIX · compaction comparison ---- */
+  /* shared "data fate" colouring: drop = warn, rewrite-in-place = key, move-out = accent, keep = ok */
+  /* per-method summary footer: a colored fate badge + labelled stats, set off
+     by a top rule so it reads as a method summary, not another row of nav chips */
+  .cmp-sum { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 22px; margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--border); }
+  .cmp-sum-stats { display: flex; flex-wrap: wrap; gap: 16px 24px; }
+  .cmp-stat { display: flex; flex-direction: column; gap: 1px; }
+  .cmp-stat-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: .07em; text-transform: uppercase; color: var(--fg3); }
+  .cmp-stat-v { font-size: 13px; color: var(--fg1); }
+
+  /* axis legend above the table */
+  .cmp-axes { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--sp-4) 0; }
+  .cmp-axis-fate { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px;
+    border-radius: var(--r-sm); padding: 6px 11px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--fg2); }
+  .cmp-axis-fate.is-drop { color: var(--warn-500); border-color: color-mix(in srgb, var(--warn-500) 40%, var(--border)); background: var(--warn-tint); }
+  .cmp-axis-fate.is-inplace { color: var(--concept-key); border-color: color-mix(in srgb, var(--concept-key) 40%, var(--border)); background: var(--concept-key-tint); }
+  .cmp-axis-fate.is-out { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-tint); }
+  .cmp-axis-fate .ic { color: currentColor; }
+
+  /* the matrix */
+  .cmp-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-md); margin: var(--sp-4) 0; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .cmp-table thead th { text-align: left; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--fg3); font-weight: 600; padding: 9px 12px; background: var(--surface-sunken); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .cmp-table tbody tr { border-bottom: 1px solid var(--border); }
+  .cmp-table tbody tr:last-child { border-bottom: 0; }
+  .cmp-table td, .cmp-table tbody th { padding: 9px 12px; vertical-align: middle; text-align: left; font-weight: 400; }
+  .cmp-m { display: block; color: var(--fg1); font-weight: 500; font-size: 12.5px; }
+  .cmp-m-note { display: block; color: var(--fg3); font-size: 10.5px; margin-top: 2px; }
+  .cmp-fate { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px;
+    border-radius: 999px; padding: 3px 9px; border: 1px solid var(--border); white-space: nowrap; }
+  .cmp-fate.is-drop { color: var(--warn-500); border-color: color-mix(in srgb, var(--warn-500) 40%, var(--border)); background: var(--warn-tint); }
+  .cmp-fate.is-inplace { color: var(--concept-key); border-color: color-mix(in srgb, var(--concept-key) 40%, var(--border)); background: var(--concept-key-tint); }
+  .cmp-fate.is-out { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-tint); }
+  .cmp-fate .ic { color: currentColor; }
+  .cmp-pips { display: inline-flex; gap: 3px; }
+  .cmp-pip { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); opacity: .5; }
+  .cmp-pip.on { opacity: 1; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="../lib/diagrams.jsx"></script>
+  <script type="text/babel" src="context-engineering.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={CONTEXTENG} section={SEC_CONTEXT} />
+    );
+  </script>
+</body>
+</html>

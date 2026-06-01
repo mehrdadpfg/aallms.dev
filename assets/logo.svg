@@ -1,0 +1,11 @@
+<svg width="300" height="80" viewBox="0 0 300 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="aallms.dev">
+  
+  <g stroke="#E8492A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M14 24 L30 40 L14 56" opacity="0.35"></path>
+    <path d="M32 24 L48 40 L32 56" opacity="0.65"></path>
+    <path d="M50 24 L66 40 L50 56" opacity="1"></path>
+  </g>
+  
+  <text x="86" y="41" font-family="Newsreader, Georgia, serif" font-size="30" font-weight="600" dominant-baseline="middle" letter-spacing="-0.01em"><tspan fill="#19170F">aa</tspan><tspan fill="#E8492A">llm</tspan><tspan fill="#19170F">s</tspan><tspan fill="#B4AC9C" font-family="&#39;JetBrains Mono&#39;, monospace" font-size="15" font-weight="400" dx="2">.dev</tspan></text>
+  <text x="87" y="62" font-family="&#39;JetBrains Mono&#39;, monospace" font-size="9.5" letter-spacing="0.2em" fill="#8C8475">LLMS, FROM SCRATCH</text>
+</svg>

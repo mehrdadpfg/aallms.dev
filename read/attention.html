@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Attention — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- KV-cache / efficient-attention diagram (AttnKV) ------------------- */
+  .kv-grid { display: flex; gap: var(--sp-5, 24px); justify-content: center; flex-wrap: wrap; }
+  .kv-side { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .kv-side-lab { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--fg3); }
+  .kv-heads { display: flex; gap: 5px; min-height: 26px; align-items: center; }
+  .kv-head { width: 18px; height: 26px; border-radius: var(--r-xs, 4px); transition: all var(--dur-1, .18s) var(--ease-standard, ease); }
+  .kv-q { background: var(--concept-query-tint); border: 1px solid color-mix(in srgb, var(--concept-query) 45%, transparent); }
+  .kv-kv { border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+  .kv-latent { width: 30px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--on-accent, #fff); border-radius: var(--r-xs, 4px); }
+  .kv-bar-wrap { display: flex; align-items: center; gap: var(--sp-3, 12px); margin-top: var(--sp-4, 18px); }
+  .kv-bar-lab { font-family: var(--font-mono); font-size: 11px; color: var(--fg2); flex: 0 0 auto; min-width: 64px; }
+  .kv-bar-track { flex: 1; height: 22px; border-radius: var(--r-sm, 7px); background: var(--surface-sunken); border: 1px solid var(--border); overflow: hidden; }
+  .kv-bar-fill { height: 100%; border-radius: var(--r-sm, 7px); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; min-width: 30px; transition: width var(--dur-2, .3s) var(--ease-standard, ease), background var(--dur-1, .18s) var(--ease-standard, ease); }
+  .kv-bar-x { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--on-accent, #fff); }
+  .kv-tag { margin: var(--sp-4, 18px) 0 0; font-size: 14px; line-height: 1.5; color: var(--fg2); }
+
+  /* ---- step-03 mechanism (AttnMechanism / AttnQKVMechanism) -------------- */
+  .mech-stack { display: flex; flex-direction: column; }
+  .mech-divider { display: flex; align-items: center; gap: var(--sp-3, 12px); margin: var(--sp-4, 18px) 0 var(--sp-4, 18px); color: var(--fg3); }
+  .mech-divider::before, .mech-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .mech-divider span { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+
+  .mech-seg.dg-seg button { font-family: var(--font-mono); }
+
+  /* a tiny signed vector strip */
+  .mech-vec { display: inline-flex; align-items: stretch; gap: 2px; height: 26px; flex: 0 0 auto; }
+  .mech-vec-cell { width: 7px; height: 100%; display: flex; align-items: center; background: color-mix(in srgb, var(--border) 50%, transparent); border-radius: 2px; }
+  .mech-vec-bar { width: 100%; border-radius: 2px; }
+
+  /* the sentence strip (meaning-givers lit by attention weight) */
+  .mech-sent { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: var(--sp-4, 18px); }
+  .mech-sent-tok { font-family: var(--font-mono); font-size: 15px; padding: 6px 12px; border-radius: var(--r-sm, 7px); transition: background var(--dur-1, .18s) var(--ease-standard, ease), color var(--dur-1, .18s) var(--ease-standard, ease); }
+  .mech-sent-tok.is-q { font-weight: 600; }
+
+  /* the chosen query header */
+  .mech-q { display: flex; align-items: center; gap: var(--sp-3, 12px); flex-wrap: wrap; margin-bottom: var(--sp-4, 18px); padding-bottom: var(--sp-4, 18px); border-bottom: 1px solid var(--border); }
+  .mech-q-lab { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--fg3); }
+  .mech-q-note { font-size: 13px; color: var(--fg2); flex: 1 1 220px; min-width: 200px; line-height: 1.45; }
+
+  /* the score table */
+  .mech-table { display: flex; flex-direction: column; gap: 2px; }
+  .mech-trow { display: grid; grid-template-columns: 52px minmax(40px,1fr) 52px 64px minmax(120px,1.4fr) minmax(40px,1fr); align-items: center; gap: var(--sp-2, 8px); padding: 6px 8px; border-radius: var(--r-xs, 4px); }
+  .mech-thead { font-family: var(--font-mono); font-size: 10px; letter-spacing: .03em; text-transform: uppercase; color: var(--fg3); padding-bottom: 2px; }
+  .mech-thead .mech-tok-h { color: var(--fg3); }
+  .mech-trow.is-self { background: var(--concept-query-tint); }
+  .mech-tok { font-family: var(--font-mono); font-size: 13px; color: var(--fg1); }
+  .mech-num { font-family: var(--font-mono); font-size: 12.5px; color: var(--fg2); text-align: right; font-variant-numeric: tabular-nums; }
+  .mech-wcell { min-width: 0; }
+  .mech-wbar-wrap { position: relative; height: 20px; background: var(--surface-sunken); border-radius: var(--r-xs, 4px); overflow: hidden; display: flex; align-items: center; }
+  .mech-wbar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-xs, 4px); transition: width var(--dur-2, .3s) var(--ease-standard, ease), background var(--dur-1, .18s) var(--ease-standard, ease); }
+  .mech-wval { position: relative; font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; padding-left: 7px; font-variant-numeric: tabular-nums; }
+
+  /* the pipeline strip */
+  .mech-flow { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--sp-3, 12px); margin: var(--sp-4, 18px) 0; padding: var(--sp-3, 12px) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--fg3); }
+  .mech-flow-step { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .mech-flow-step b { font-family: var(--font-body); font-size: 12.5px; color: var(--fg1); }
+  .mech-flow-step span { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg3); }
+  .mech-flow-out b { color: var(--concept-output); }
+
+  /* the output vector + resolved-meaning readout */
+  .mech-out { display: flex; align-items: center; gap: var(--sp-3, 12px); flex-wrap: wrap; }
+  .mech-out-lab { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
+  .mech-resolved { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-sm, 7px); border: 1px solid; transition: background var(--dur-2, .3s) var(--ease-standard, ease), border-color var(--dur-2, .3s) var(--ease-standard, ease); margin-left: auto; }
+  .mech-resolved-arrow { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .03em; text-transform: uppercase; color: var(--fg3); }
+  .mech-resolved-tag { font-family: var(--font-body); font-size: 15px; font-weight: 600; }
+
+  @media (max-width: 620px) {
+    .mech-trow { grid-template-columns: 44px 1fr 44px 56px 1.3fr; }
+    .mech-trow > .mech-vec:last-child, .mech-thead > span:last-child { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="../lib/diagrams.jsx"></script>
+  <script type="text/babel" src="attention.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={ATTENTION} section={SEC_TRANSFORMER} />
+    );
+  </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Sources — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  .ref-sources-h { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-h2); line-height: 1.2; color: var(--fg1); margin: var(--sp-7) 0 var(--sp-2); padding-top: var(--sp-6); border-top: 1px solid var(--border); }
+  .ref-sources-note { font-size: 0.95rem; color: var(--fg2); margin: 0; max-width: 62ch; }
+  .refidx { margin-top: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-7); }
+  .refgrp-h { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-h3); color: var(--fg1); margin: 0 0 var(--sp-2); }
+  .refgrp-note { font-size: 0.95rem; color: var(--fg2); margin: 0 0 var(--sp-4); max-width: 60ch; }
+  .reflist { list-style: none; margin: 0; padding: 0; counter-reset: ref; display: grid; gap: 7px; }
+  .refitem { counter-increment: ref; }
+  .refitem > a { display: flex; align-items: baseline; gap: 12px; text-decoration: none; padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface); transition: border-color var(--dur-1) var(--ease-standard), background var(--dur-1) var(--ease-standard); }
+  .refitem > a::before { content: "[" counter(ref) "]"; font-family: var(--font-mono); font-size: 12px; color: var(--accent); flex: none; font-weight: var(--w-semibold); }
+  .refitem > a:hover { border-color: var(--border-strong); background: var(--surface-sunken); }
+  .refitem-ttl { font-size: 15px; color: var(--fg1); flex: 1; line-height: 1.35; }
+  .refitem > a:hover .refitem-ttl { text-decoration: underline; text-decoration-color: var(--border-strong); }
+  .refitem-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; text-align: right; }
+  .refitem-src { font-size: 12px; color: var(--fg2); }
+  .refitem-host { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .ref-foot { margin-top: var(--sp-7); padding-top: var(--sp-5); border-top: 1px solid var(--border); }
+  .ref-foot a { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; color: var(--fg2); font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; }
+  .ref-foot a:hover { color: var(--accent); }
+  @media (max-width: 560px) { .refitem > a { flex-wrap: wrap; } .refitem-meta { align-items: flex-start; text-align: left; } }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="references.jsx"></script>
+</body>
+</html>

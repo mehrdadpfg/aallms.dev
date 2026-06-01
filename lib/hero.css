@@ -1,0 +1,134 @@
+/* ============================================================================
+   aallms — hero / nested-model visualizations
+   Shared styles for the three landing hero variations + the landing chrome.
+   Built on colors_and_type.css + kit.css tokens.
+   ========================================================================== */
+
+/* ---- generic fit-to-parent stage (scales a fixed design canvas) --------- */
+.fitstage { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.fitstage-inner { transform-origin: center center; flex: none; }
+
+/* ---- shared svg ring/group helpers -------------------------------------- */
+.hero-svg { display: block; overflow: visible; }
+.hero-ring-stroke { fill: none; transition: stroke-width var(--dur-2) var(--ease-standard), opacity var(--dur-2) var(--ease-standard); }
+.hero-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; }
+
+@keyframes heroRingIn { from { opacity: 0; transform: scale(.35); } to { opacity: 1; transform: scale(1); } }
+@keyframes heroPop    { from { opacity: 0; transform: scale(.2);  } to { opacity: 1; transform: scale(1); } }
+@keyframes heroSpin   { to { transform: rotate(360deg); } }
+@keyframes heroSpinR  { to { transform: rotate(-360deg); } }
+@keyframes heroTwinkle { 0%,100% { opacity: .18; } 50% { opacity: 1; } }
+@keyframes heroCorePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes heroLabelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes heroDash { to { stroke-dashoffset: -1000; } }
+@keyframes heroFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes heroScan { 0% { transform: translateY(0); opacity:0; } 8% { opacity:.9; } 92% { opacity:.9; } 100% { transform: translateY(var(--scan-h,440px)); opacity:0; } }
+@keyframes heroFlowIn { 0% { offset-distance: 0%; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+
+/* group transforms must be about the canvas centre, in viewBox units */
+.ring-entrance { transform-box: view-box; transform-origin: var(--cx) var(--cy); transition: opacity var(--dur-4) var(--ease-spring), transform var(--dur-4) var(--ease-spring); }
+.ring-entrance.is-pre { opacity: 0; transform: scale(.4); }
+.ring-orbit    { transform-box: view-box; transform-origin: var(--cx) var(--cy); }
+.core-pulse    { transform-box: view-box; transform-origin: var(--cx) var(--cy); animation: heroCorePulse 3.2s var(--ease-in-out) infinite; }
+
+/* ---- ring labels (HTML overlay, positioned in design px) ---------------- */
+.hero-stage { position: relative; }
+.hero-labels { position: absolute; inset: 0; pointer-events: none; }
+.hero-chip {
+  position: absolute; pointer-events: auto; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 7px 11px; border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-2);
+  backdrop-filter: blur(4px);
+  transition: transform var(--dur-3) var(--ease-spring), opacity var(--dur-3) var(--ease-standard), border-color var(--dur-1) var(--ease-standard), box-shadow var(--dur-1) var(--ease-standard);
+  min-width: 0;
+}
+.hero-chip:hover { transform: translateY(-2px); box-shadow: var(--sh-3); }
+.hero-chip__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.hero-chip__top { display: flex; align-items: center; gap: 7px; }
+.hero-chip__name { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--fg1); line-height: 1.1; white-space: nowrap; }
+.hero-chip__sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; color: var(--fg3); white-space: nowrap; overflow: hidden; }
+.hero-chip.is-dim { opacity: .4; }
+.hero-chip.is-on { border-color: var(--border-strong); }
+
+.hero-corelabel {
+  position: absolute; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  transform: translate(-50%, 0);
+  text-align: center;
+}
+.hero-corelabel__name { font-family: var(--font-display); font-weight: 600; font-size: 16px; color: var(--fg1); line-height: 1; }
+.hero-corelabel__sub  { font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+
+/* ---- BOXES variation (blueprint, HTML) ---------------------------------- */
+.bx-stage { position: relative; }
+.bx-layer {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  border: 1.5px solid var(--lc, var(--border-strong)); border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--lc, var(--fg3)) 7%, transparent);
+  transition: box-shadow var(--dur-2) var(--ease-standard), transform var(--dur-3) var(--ease-spring), opacity var(--dur-3) var(--ease-standard), border-color var(--dur-2) var(--ease-standard);
+  cursor: pointer;
+}
+.bx-layer.is-dim { opacity: .45; }
+.bx-tag {
+  position: absolute; top: -1px; left: -1px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--on-accent); background: var(--lc, var(--fg3));
+  padding: 3px 9px; border-radius: var(--r-md) 0 var(--r-md) 0; white-space: nowrap;
+}
+.bx-sub { position: absolute; top: 22px; left: 9px; font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+.bx-core {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background: var(--accent); border: none; border-radius: var(--r-md);
+  box-shadow: var(--sh-3); transition: transform var(--dur-3) var(--ease-spring), opacity var(--dur-3) var(--ease-standard);
+}
+.bx-core__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.bx-core__cell { width: 7px; height: 7px; border-radius: 1.5px; background: var(--on-accent); animation: heroTwinkle 2.4s var(--ease-in-out) infinite; }
+.bx-core__name { font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--on-accent); }
+.bx-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: heroScan 4.6s var(--ease-in-out) infinite; opacity: 0; }
+.bx-tok { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: var(--r-xs); background: var(--surface); border: 1px solid var(--border); color: var(--fg2); }
+
+/* ---- GRAPH variation ---------------------------------------------------- */
+.gr-node-label { font-family: var(--font-display); font-weight: 600; font-size: 13px; fill: var(--fg1); }
+.gr-node-sub   { font-family: var(--font-mono); font-size: 9px; letter-spacing: .04em; }
+.gr-tool-label { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .03em; fill: var(--fg2); }
+.gr-edge { fill: none; stroke: var(--border-strong); stroke-width: 1.5; transition: stroke var(--dur-2) var(--ease-standard), opacity var(--dur-2) var(--ease-standard); }
+.gr-edge.is-flow { stroke-dasharray: 4 7; animation: heroDash 14s linear infinite; }
+.gr-float { transform-box: view-box; }
+.gr-particle { offset-rotate: 0deg; }
+
+/* ---- LANDING chrome ----------------------------------------------------- */
+.land { height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--fg1); position: relative; overflow: hidden; }
+.land::before { /* faint plate grid wash behind the hero */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image:
+    linear-gradient(var(--plate-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--plate-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 46%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 46%, #000 30%, transparent 78%);
+}
+.land-top { position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between; padding: var(--sp-5) var(--sp-7); }
+.land-top .brand-word { font-size: 20px; }
+.land-hero { position: relative; z-index: 2; flex: 1; display: grid; grid-template-rows: 1fr auto; min-height: 0; }
+.land-stagewrap { min-height: 0; position: relative; padding: var(--sp-4) var(--sp-6) 0; }
+.land-foot { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-6) var(--sp-5); text-align: center; }
+.land-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); transition: opacity var(--dur-3) var(--ease-standard), transform var(--dur-3) var(--ease-standard); }
+.land-title { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.5rem, 1rem + 1.7vw, 2.1rem); line-height: 1.14; letter-spacing: -0.02em; color: var(--fg1); max-width: 44ch; margin: 0; transition: opacity var(--dur-3) var(--ease-standard) 60ms, transform var(--dur-3) var(--ease-standard) 60ms; }
+.land-title em { font-style: italic; color: var(--accent); }
+.land-cta { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-body); font-size: 16px; font-weight: 600; padding: 13px 26px; border-radius: var(--r-pill); background: var(--accent); color: var(--on-accent); border: none; cursor: pointer; text-decoration: none; box-shadow: var(--sh-2); transition: background var(--dur-1) var(--ease-standard), transform var(--dur-3) var(--ease-spring), box-shadow var(--dur-1) var(--ease-standard), opacity var(--dur-3) var(--ease-standard); }
+.land-cta:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: var(--sh-3); }
+.land-cta:active { transform: translateY(1px) scale(.98); background: var(--accent-press); }
+.land-foot.is-pre .land-eyebrow { opacity: 0; transform: translateY(10px); }
+.land-foot.is-pre .land-title { opacity: 0; transform: translateY(10px); }
+.land-foot.is-pre .land-cta { opacity: 0; transform: translateY(10px); }
+.land-cta .ic svg { display: block; transition: transform var(--dur-2) var(--ease-spring); }
+.land-cta:hover .ic svg { transform: translateX(4px); }
+.land-hint { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+.land-switch { display: inline-flex; gap: 4px; padding: 3px; border-radius: var(--r-pill); background: var(--surface-sunken); border: 1px solid var(--border); }
+.land-switch button { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; padding: 5px 12px; border-radius: var(--r-pill); border: none; background: transparent; color: var(--fg3); cursor: pointer; transition: all var(--dur-1) var(--ease-standard); }
+.land-switch button.is-on { background: var(--surface); color: var(--accent); box-shadow: var(--sh-1); }
+.land-tools { display: flex; align-items: center; gap: var(--sp-3); }

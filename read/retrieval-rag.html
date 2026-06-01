@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/boot.js"></script>
+<title>Retrieval & RAG — aallms.dev</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../lib/colors_and_type.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<link rel="stylesheet" href="reader.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg1); font-family: var(--font-body); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+
+  /* ---- STEP 01 · why retrieve ---- */
+  .ragw-flow { display: flex; align-items: stretch; gap: var(--sp-3); flex-wrap: wrap; }
+  @media (max-width: 760px) { .ragw-flow { flex-direction: column; } }
+  .ragw-stage { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 8px; padding: var(--sp-4);
+    border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+  .ragw-h { margin: 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); }
+  .ragw-note { margin-top: auto; font-family: var(--font-mono); font-size: 9.5px; color: var(--fg3); }
+  .ragw-corpus { background: var(--surface-sunken); }
+  .ragw-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .ragw-doc { aspect-ratio: 3 / 4; border-radius: 2px; background: var(--border-strong); opacity: .5; }
+  .ragw-doc.is-pick { background: var(--accent); opacity: 1; box-shadow: 0 0 0 3px var(--accent-tint); }
+  .ragw-bars { display: flex; align-items: flex-end; gap: 5px; height: 40px; }
+  .ragw-bar { flex: 1; border-radius: 2px 2px 0 0; background: var(--border-strong); opacity: .55; }
+  .ragw-bar.is-pick { background: var(--accent); opacity: 1; }
+  .ragw-win-fixed { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); padding: 6px 8px; border-radius: var(--r-sm);
+    background: var(--surface-sunken); border: 1px dashed var(--border); }
+  .ragw-slice { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg1); padding: 7px 9px;
+    border-radius: var(--r-sm); background: var(--accent-tint); border-left: 3px solid var(--accent); }
+  .ragw-slice .ic { color: var(--accent); }
+  .ragw-step { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0 2px; }
+  @media (max-width: 760px) { .ragw-step { flex-direction: row; } }
+  .ragw-arrow { color: var(--fg3); display: inline-flex; }
+  .ragw-op { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--fg2); }
+  .ragw-op .ic { color: var(--accent); }
+
+  /* ---- STEP 02 · chunking ---- */
+  .ragc-doc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ragc-chunk { display: flex; flex-direction: column; gap: 4px; flex: 1 1 160px; min-width: 140px; padding: 9px 11px;
+    border-radius: var(--r-sm); background: var(--surface-sunken); border: 1px solid var(--border); border-left: 3px solid var(--cc); }
+  .ragc-chunk-n { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--cc); }
+  .ragc-text { font-size: 13px; line-height: 1.5; color: var(--fg1); }
+
+  /* ---- STEP 03 · retrieve-then-read (copied from context-engineering) ---- */
+  .rag-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--sp-5); align-items: stretch; }
+  @media (max-width: 720px) { .rag-grid { grid-template-columns: 1fr; } }
+  .rag-space { position: relative; aspect-ratio: 1 / 0.82; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-sunken);
+    background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 14px 14px; overflow: hidden; }
+  .rag-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .rag-dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--rc); transform: translate(-50%, -50%);
+    opacity: .42; transition: all var(--dur-3, .28s) var(--ease-standard); box-shadow: 0 0 0 0 transparent; }
+  .rag-dot.is-hit { opacity: 1; width: 14px; height: 14px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--rc) 26%, transparent); }
+  .rag-dot-lab { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-family: var(--font-mono);
+    font-size: 9.5px; color: var(--fg3); opacity: 0; transition: opacity var(--dur-3, .28s); pointer-events: none; }
+  .rag-dot.is-hit .rag-dot-lab { opacity: 1; color: var(--fg2); }
+  .rag-query { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: grid; place-items: center; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 28%, transparent);
+    transition: all var(--dur-3, .28s) var(--ease-spring); z-index: 2; }
+  .rag-window { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: var(--sp-4); }
+  .rag-window-h { margin: 0 0 2px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg3); }
+  .rag-window-fixed { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg3); padding: 6px 8px; border-radius: var(--r-sm);
+    background: var(--surface-sunken); border: 1px dashed var(--border); }
+  .rag-window-chunk { position: relative; font-size: 12px; color: var(--fg1); padding: 7px 9px 7px 11px; border-radius: var(--r-sm);
+    background: var(--surface-sunken); border-left: 3px solid var(--border-strong); display: flex; align-items: center; gap: 8px; }
+  .rag-window-rank { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); }
+  .rag-window-sim { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--accent); }
+
+  /* ---- STEP 04 · getting it right (top-k) ---- */
+  .ragk-list { display: flex; flex-direction: column; gap: 6px; }
+  .ragk-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 11px; border-radius: var(--r-sm);
+    border: 1px solid var(--border); background: var(--surface-sunken); opacity: .45; transition: all var(--dur-3, .28s) var(--ease-standard); }
+  .ragk-row.is-in { opacity: 1; background: var(--surface); border-color: var(--border-strong); }
+  .ragk-row.is-in.is-noise { border-color: color-mix(in srgb, var(--warn-500) 55%, var(--border)); background: color-mix(in srgb, var(--warn-500) 8%, var(--surface)); }
+  .ragk-rank { font-family: var(--font-mono); font-size: 10px; color: var(--fg3); width: 14px; }
+  .ragk-lab { font-size: 13px; color: var(--fg1); }
+  .ragk-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 999px;
+    color: var(--ok-500); background: color-mix(in srgb, var(--ok-500) 14%, transparent); }
+  .ragk-row.is-noise .ragk-tag { color: var(--warn-500); background: color-mix(in srgb, var(--warn-500) 16%, transparent); }
+  .ragk-bar { margin-left: auto; width: 84px; height: 5px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; flex: none; }
+  .ragk-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+  .ragk-cut { position: absolute; right: 11px; bottom: -8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--accent); background: var(--bg); padding: 0 5px; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="text/babel" src="../lib/parts.jsx"></script>
+  <script type="text/babel" src="reader.jsx"></script>
+  <script type="text/babel" src="sections.jsx"></script>
+  <script type="text/babel" src="refs.jsx"></script>
+  <script type="text/babel" src="../lib/diagrams.jsx"></script>
+  <script type="text/babel" src="retrieval-rag.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <StepReader chapter={RAG_CH} section={SEC_CONTEXT} />
+    );
+  </script>
+</body>
+</html>

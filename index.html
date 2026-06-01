@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="lib/boot.js"></script>
+<title>aallms.dev — an explorable guide to LLMs</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/colors_and_type.css">
+<link rel="stylesheet" href="lib/kit.css">
+<link rel="stylesheet" href="lib/hero.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--font-body); background: var(--bg); }
+  .ic { color: currentColor; display: inline-flex; } .ic svg { display: block; }
+  #root { height: 100%; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script type="text/babel" src="lib/parts.jsx"></script>
+  <script type="text/babel" src="hero.jsx"></script>
+
+  <script type="text/babel">
+    const { FitStage, HERO_VARIANTS, Icon, ThemeToggle, useMounted } = window;
+
+    function Brand() {
+      return (
+        <a className="brand" href="index.html">
+          <span className="brand-chev">
+            <svg viewBox="0 0 20 42" width="14" height="28"><path d="M5 11 L13 21 L5 31" stroke="var(--accent)" strokeWidth="3.4" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".4"/></svg>
+            <svg viewBox="0 0 20 42" width="14" height="28"><path d="M5 11 L13 21 L5 31" stroke="var(--accent)" strokeWidth="3.4" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".7"/></svg>
+            <svg viewBox="0 0 20 42" width="14" height="28"><path d="M5 11 L13 21 L5 31" stroke="var(--accent)" strokeWidth="3.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </span>
+          <span className="brand-word">aa<span className="brand-llm">llm</span>s<span className="brand-dev">.dev</span></span>
+        </a>
+      );
+    }
+
+    const HERO_NAV = {
+      transformer: "read/tokenizer.html",
+      llm: "read/llms-vs-rlms.html",
+      context: "read/context-engineering.html",
+      harness: "read/harness-engineering.html",
+    };
+
+    const readTheme = () => {
+      try { const t = localStorage.getItem("aallms:theme"); if (t === "light" || t === "dark") return t; } catch (e) {}
+      return "dark";
+    };
+
+    function Landing() {
+      const [theme, setTheme] = React.useState(readTheme);
+      const mounted = useMounted();
+      // Persist the theme site-wide and keep <html> in sync — also re-assert on
+      // bfcache restore (back/forward restores the DOM without re-running mount
+      // effects). One shared key means the landing and every chapter agree.
+      React.useEffect(() => {
+        document.documentElement.dataset.theme = theme;
+        try { localStorage.setItem("aallms:theme", theme); } catch (e) {}
+        const reassert = () => { document.documentElement.dataset.theme = theme; };
+        window.addEventListener("pageshow", reassert);
+        return () => window.removeEventListener("pageshow", reassert);
+      }, [theme]);
+      const V = HERO_VARIANTS.find(v => v.id === "rings");
+      const C = V.Comp;
+      return (
+        <div className="land">
+          <div className="land-top">
+            <Brand />
+            <div className="land-tools">
+              <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === "dark" ? "light" : "dark")} />
+            </div>
+          </div>
+
+          <div className="land-hero">
+            <div className="land-stagewrap">
+              <FitStage w={V.w} h={V.h} max={1}>
+                <C key={theme} onPick={(id) => { if (HERO_NAV[id]) window.location.href = HERO_NAV[id]; }} />
+              </FitStage>
+            </div>
+            <div className={"land-foot" + (mounted ? "" : " is-pre")}>
+              <p className="land-eyebrow">An explorable guide to large language models</p>
+              <h1 className="land-title">From the <em>transformer</em> at the core to the <em>harness</em> around it — one step at a time.</h1>
+              <a className="land-cta" href="read/tokenizer.html">Start reading <Icon name="arrow-right" size={18} stroke={2.2} /></a>
+              <p className="land-hint">4 chapters · interactive diagrams · no math required</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <><Landing /><SiteFooter refsHref="read/references.html" /></>
+    );
+  </script>
+</body>
+</html>
